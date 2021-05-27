@@ -1,0 +1,8 @@
+.vscode/
+md/
+
+*.db
+
+api.ikurum.cn
+
+global/initDB.go
