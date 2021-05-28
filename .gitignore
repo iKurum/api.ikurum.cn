@@ -5,4 +5,4 @@ md/
 
 api.ikurum.cn
 
-global/initDB.go
+global/init.go

@@ -8,6 +8,7 @@ import (
 	"api.ikurum.cn/route"
 
 	_ "api.ikurum.cn/v1/article"
+	_ "api.ikurum.cn/v1/ocr"
 	_ "api.ikurum.cn/v1/user"
 )
 
