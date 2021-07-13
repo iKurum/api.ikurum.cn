@@ -1,10 +1,12 @@
 package global
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"api.ikurum.cn/initDB"
 	"github.com/boltdb/bolt"
@@ -21,7 +23,7 @@ type Result struct {
 }
 
 // 初始化数据库
-func BoltInit() {
+func BoltInit() error {
 	db, err := bolt.Open("ikurum.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -53,6 +55,8 @@ func BoltInit() {
 
 		return err
 	})
+
+	return err
 }
 
 // 是否已有bucket
@@ -188,13 +192,22 @@ func GetBody(url string, t string) []byte {
 	jsonTxt, _ = ioutil.ReadAll(resp.Body)
 
 	if t == "img" {
-		err := UpdateByDB("photo", "str", string(jsonTxt))
+		err := writeToPhoto("photo.jpg", jsonTxt)
 		if err == nil {
 			fmt.Println("更新头像完成")
 		}
 	}
 
 	return jsonTxt
+}
+
+func writeToPhoto(url string, msg []byte) error {
+	if err := ioutil.WriteFile(url, msg, 0777); err != nil {
+		os.Exit(111)
+		return err
+	}
+
+	return nil
 }
 
 // func getPhoto(body io.Reader) error {
@@ -221,4 +234,35 @@ func NewResult(res *Result) *Result {
 	}
 
 	return res
+}
+
+// 设置一言
+func SetOne() {
+	var s string
+
+	fin, err := os.OpenFile("./one", os.O_RDONLY, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fin.Close()
+
+	sc := bufio.NewScanner(fin)
+	/*default split the file use '\n'*/
+	for sc.Scan() {
+		t := sc.Text()
+		s = s + t + "*_*"
+	}
+
+	if err = sc.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	UpdateByDB("oneBucket", "data", s[0:len(s)-3])
+}
+
+// 设置 请求头
+func SetHeader(rw http.ResponseWriter) {
+	rw.Header().Add("x-content-type-options", "nosniff")
+	rw.Header().Del("Content-Type")
+	rw.Header().Add("Content-Type", "application/json;utf-8")
 }

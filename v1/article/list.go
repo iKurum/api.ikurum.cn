@@ -13,6 +13,8 @@ import (
 
 func init() {
 	route.Mux.GET("/v1/article/list", func(rw http.ResponseWriter, r *http.Request) {
+		global.SetHeader(rw)
+
 		query := r.URL.Query()
 		page := "1"
 		size := "10"

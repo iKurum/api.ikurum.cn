@@ -10,6 +10,8 @@ import (
 
 func init() {
 	route.Mux.GET("/v1/user/info", func(rw http.ResponseWriter, r *http.Request) {
+		global.SetHeader(rw)
+
 		info := global.GetByBucket("userInfo")
 		d := map[string]interface{}{
 			"surname": info["surname"],
