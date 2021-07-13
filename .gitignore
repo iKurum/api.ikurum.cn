@@ -4,6 +4,5 @@ md/
 *.db
 
 api.ikurum.cn
-one
 *.jpg
 global/init.go

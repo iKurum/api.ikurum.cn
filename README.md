@@ -1,6 +1,6 @@
 - 初次需要 `token`，填写 `InitDB` 字段:
   ```go
-    "clientID":           "",
+  "clientID":           "",
   "clientSecretOnline": "",
   "refreshTokenOnline": "",
   ```
