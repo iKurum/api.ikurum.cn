@@ -24,20 +24,26 @@ func init() {
 
 		id := params["id"]
 		if id != "" {
-			m := global.GetByBucket(id)
-			var data = map[string]interface{}{
-				"id":                   id,
-				"article":              m["article"],
-				"name":                 m["name"],
-				"size":                 m["size"],
-				"createdDateTime":      m["createdDateTime"],
-				"lastModifiedDateTime": m["lastModifiedDateTime"],
-			}
+			m := global.GetByEssay(id)
+			fmt.Println(m.Err)
+			if m.Err != "" {
+				msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 0, Msg: m.Err}))
+				rw.Write(msg)
+			} else {
+				var data = map[string]interface{}{
+					"id":      m.Id,
+					"content": m.Content,
+					"title":   m.Title,
+					"size":    m.Size,
+					"note":    m.Note,
+					"uptime":  m.Uptime,
+				}
 
-			msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: data}))
-			rw.Write(msg)
+				msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: data}))
+				rw.Write(msg)
+			}
 		} else {
-			msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 0, Msg: "获取文章id错误"}))
+			msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 0, Msg: "缺少参数id"}))
 			rw.Write(msg)
 		}
 	})

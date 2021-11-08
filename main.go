@@ -9,10 +9,7 @@ import (
 )
 
 func main() {
-	err := global.BoltInit()
-	if err == nil {
-		global.SetOne()
-	}
+	global.SetOne()
 
 	go util.StartToken()
 

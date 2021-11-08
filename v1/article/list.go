@@ -62,25 +62,25 @@ func init() {
 			}
 		} else {
 			fmt.Println("开始获取详情 ...", p, s)
-			tep := 0
+			// tep := 0
 			for i := (p - 1) * s; i < p*s; i++ {
 				fmt.Printf("detail len: %d\t%t\n", len(arr), len(arr) > i)
 
 				if len(arr) > i {
-					m := global.GetByBucket(arr[i])
-					if m["id"] != "" {
-						fmt.Println("get detail data:", m["name"])
+					// m := global.GetByEssay(arr[i])
+					// if m["id"] != "" {
+					// 	fmt.Println("get detail data:", m["name"])
 
-						d[tep] = map[string]string{
-							"id":    m["id"],
-							"cTime": m["createdDateTime"],
-							"mTime": m["lastModifiedDateTime"],
-							"name":  m["name"],
-							"note":  m["note"],
-							"size":  m["size"],
-						}
-						tep++
-					}
+					// 	d[tep] = map[string]string{
+					// 		"id":    m["id"],
+					// 		"cTime": m["createdDateTime"],
+					// 		"mTime": m["lastModifiedDateTime"],
+					// 		"name":  m["name"],
+					// 		"note":  m["note"],
+					// 		"size":  m["size"],
+					// 	}
+					// 	tep++
+					// }
 				}
 			}
 		}

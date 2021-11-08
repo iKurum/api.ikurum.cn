@@ -1,8 +1,10 @@
 package initDB
 
 var DB = map[string]string{
-	"baseURL":            "https://graph.microsoft.com/v1.0/me",
-	"clientID":           "",
-	"clientSecretOnline": "",
-	"refreshTokenOnline": "",
+	"title":    "", // 数据库名称，如mysql
+	"user":     "",
+	"pw":       "",
+	"ip":       "",
+	"port":     "",
+	"database": "",
 }

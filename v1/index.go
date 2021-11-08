@@ -18,7 +18,12 @@ func init() {
 	route.Mux.GET("/v1/index", func(rw http.ResponseWriter, r *http.Request) {
 		global.SetHeader(rw)
 
-		msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: "This is api.ikurum.cn"}))
+		global.OpenDB()
+		msg, _ := json.Marshal(global.NewResult(&global.Result{
+			Code: 200,
+			Data: "database connect",
+			Msg:  "This is api.ikurum.cn",
+		}))
 		rw.Write(msg)
 	})
 

@@ -2,15 +2,23 @@ package global
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strings"
+
+	"database/sql"
 
 	"api.ikurum.cn/initDB"
 	"github.com/boltdb/bolt"
+	_ "github.com/go-sql-driver/mysql"
 )
+
+// token刷新时间  \小时
+var SetTokenTime int = 1
 
 // 接口返回
 type Result struct {
@@ -22,58 +30,69 @@ type Result struct {
 	Size int         `json:"size"`
 }
 
-// 初始化数据库
-func BoltInit() error {
-	db, err := bolt.Open("ikurum.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	db.Update(func(t *bolt.Tx) error {
-		var c = make(map[string]string)
-		if initDB.DB["clientID"] != "" {
-			c = initDB.DB
-		} else {
-			c = initdb
-		}
-
-		b, err := t.CreateBucketIfNotExists([]byte("global"))
-		if err != nil {
-			return fmt.Errorf("create global bucket: %s", err)
-		}
-
-		fmt.Println("set global ...")
-
-		for k, v := range c {
-			err = b.Put([]byte(k), []byte(v))
-			if err != nil {
-				return fmt.Errorf("create bucket global %s: %s", k, err)
-			}
-			fmt.Printf("create bucket global: %s\n", k)
-		}
-
-		return err
-	})
-
-	return err
+// 文章详情
+type Essay struct {
+	Id      int
+	Content string
+	Title   string
+	Size    string
+	Note    string
+	Uptime  int
+	Err     string
 }
 
-// 是否已有bucket
-func HasBucket(bucket string) error {
-	db, err := bolt.Open("ikurum.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
+// 链接数据库
+func OpenDB() *sql.DB {
+	var c = make(map[string]string)
+	if initDB.DB["ip"] != "" {
+		c = initDB.DB
+	} else {
+		c = initdb
 	}
-	defer db.Close()
+	path := strings.Join([]string{c["user"], ":", c["pw"], "@tcp(", c["ip"], ":", c["port"], ")/", c["database"], "?charset=utf8"}, "")
+	DB, _ := sql.Open(c["title"], path)
+	//设置数据库最大连接数
+	DB.SetConnMaxLifetime(100)
+	//设置上数据库最大闲置连接数
+	DB.SetMaxIdleConns(10)
 
-	return db.Update(func(t *bolt.Tx) error {
-		b, e := t.CreateBucketIfNotExists([]byte(bucket))
-		if e != nil {
-			b.Delete([]byte(bucket))
-		}
-		return e
-	})
+	//验证连接
+	err := DB.Ping()
+	CheckErr(err, "open database fail")
+	return DB
+}
+
+// 是否已有essay
+func HasEssay(essayId string) error {
+	DB := OpenDB()
+
+	var time int
+	err := DB.QueryRow("select uptime from essay where essayId=?", essayId).Scan(&time)
+	t := CheckErr(err, "")
+	if t == 1 {
+		return err
+	}
+	return nil
+}
+
+// 获取essay数据
+func GetByEssay(essayId string) Essay {
+	DB := OpenDB()
+
+	var essay Essay
+	err := DB.QueryRow("select aid,title,note,content,size,uptime from essay where aid=?", essayId).Scan(
+		&essay.Id,
+		&essay.Title,
+		&essay.Note,
+		&essay.Content,
+		&essay.Size,
+		&essay.Uptime,
+	)
+	t := CheckErr(err, "")
+	if t == 1 {
+		essay.Err = "参数id错误"
+	}
+	return essay
 }
 
 // 删除bucket
@@ -91,41 +110,6 @@ func DelBucket(bucket string) error {
 		}
 		return e
 	})
-}
-
-// 获取bucket数据
-func GetByBucket(bucket string) map[string]string {
-	db, err := bolt.Open("ikurum.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	m := make(map[string]string)
-
-	if err := db.Update(func(t *bolt.Tx) error {
-		_, e := t.CreateBucketIfNotExists([]byte(bucket))
-		return e
-	}); err == nil {
-		fmt.Printf("获取%s bucket key-value\n", bucket)
-		db.View(func(tx *bolt.Tx) error {
-			// Assume bucket exists and has keys
-			b := tx.Bucket([]byte(bucket))
-
-			c := b.Cursor()
-
-			for k, v := c.First(); k != nil; k, v = c.Next() {
-				// fmt.Printf("key=%s, value=%s\n", k, v)
-				m[string(k)] = string(v)
-			}
-
-			return nil
-		})
-	} else {
-		fmt.Printf("没有%s bucket\n", bucket)
-	}
-
-	return m
 }
 
 // db 获取单个数据
@@ -170,13 +154,24 @@ func UpdateByDB(bucket string, k string, v string) error {
 
 // 请求数据
 func GetBody(url string, t string) []byte {
-	baseURL := GetByDB("global", "baseURL")
-	accessToken := GetByDB("global", "accessToken")
+	var (
+		baseURL string
+		access  string
+	)
+
+	DB := OpenDB()
+	err := DB.QueryRow("select access from user where uid=1").Scan(&access)
+	CheckErr(err, "")
+
+	err = DB.QueryRow("select BASE_URL from global where gid=1").Scan(&baseURL)
+	CheckErr(err, "")
+	// baseURL := GetByDB("global", "baseURL")
+	// accessToken := GetByDB("global", "accessToken")
 
 	req, _ := http.NewRequest("GET", baseURL+url, nil)
-	req.Header.Set("Authorization", accessToken)
+	req.Header.Set("Authorization", access)
 
-	if t == "" {
+	if t == "" || t == "json" {
 		req.Header.Set("Content-Type", "application/json")
 	} else if t == "img" {
 		req.Header.Set("Content-Type", t)
@@ -192,32 +187,33 @@ func GetBody(url string, t string) []byte {
 	jsonTxt, _ = ioutil.ReadAll(resp.Body)
 
 	if t == "img" {
-		err := writeToPhoto("photo.jpg", jsonTxt)
-		if err == nil {
-			fmt.Println("更新头像完成")
-		}
+		sql, err := DB.Prepare("update user set photo=? where uid=1")
+		CheckErr(err, "")
+
+		res, err := sql.Exec(base64.StdEncoding.EncodeToString(jsonTxt))
+		CheckErr(err, "exec failed")
+
+		//查询影响的行数，判断修改插入成功
+		_, err = res.RowsAffected()
+		CheckErr(err, "rows failed")
+		fmt.Println("更新头像完成")
 	}
 
 	return jsonTxt
 }
 
-func writeToPhoto(url string, msg []byte) error {
-	if err := ioutil.WriteFile(url, msg, 0777); err != nil {
-		os.Exit(111)
-		return err
+// err 检查
+func CheckErr(err error, str string) int {
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 1
+		} else {
+			log.Fatalln(str, err)
+		}
 	}
 
-	return nil
+	return 0
 }
-
-// func getPhoto(body io.Reader) error {
-// 	f, err := os.Create("v1/user/photo.jpg")
-// 	if err != nil {
-// 		return err
-// 	}
-// 	io.Copy(f, body)
-// 	return nil
-// }
 
 // 返回格式
 func NewResult(res *Result) *Result {
