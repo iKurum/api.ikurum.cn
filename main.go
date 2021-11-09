@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "api.ikurum.cn/global"
 	"api.ikurum.cn/route"
 	"api.ikurum.cn/util"
 	_ "api.ikurum.cn/v1"
