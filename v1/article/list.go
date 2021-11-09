@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"api.ikurum.cn/global"
 	"api.ikurum.cn/route"
@@ -14,89 +13,94 @@ import (
 func init() {
 	route.Mux.GET("/v1/article/list", func(rw http.ResponseWriter, r *http.Request) {
 		global.SetHeader(rw)
+		DB := global.OpenDB()
+
+		var count int64
+		DB.QueryRow("select count(*) from essay").Scan(&count)
+		fmt.Println("count", count)
 
 		query := r.URL.Query()
-		page := "1"
-		size := "10"
+		page := 1
+		size := 10
 
+		var err error
 		if query.Get("page") != "" {
-			page = query.Get("page")
+			page, err = strconv.Atoi(query.Get("page"))
+			if err != nil {
+				msg, _ := json.Marshal(global.NewResult(&global.Result{
+					Code: 0,
+					Msg:  "参数page错误",
+				}))
+				rw.Write(msg)
+				return
+			}
 			fmt.Println("query page:", page)
 		}
 		if query.Get("size") != "" {
-			size = query.Get("size")
+			size, err = strconv.Atoi(query.Get("size"))
+			if err != nil {
+				msg, _ := json.Marshal(global.NewResult(&global.Result{
+					Code: 0,
+					Msg:  "参数size错误",
+				}))
+				rw.Write(msg)
+				return
+			}
 			fmt.Println("query size:", size)
 		}
 
-		d := make(map[int]interface{})
-
-		str := global.GetByDB("detailList", "id")
-		arr := strings.Split(str, ",")
-
-		if len(arr) != 0 && arr[len(arr)-1] == "" {
-			arr = arr[0 : len(arr)-1]
+		// 超出数据
+		if int64((page-1)*size) >= count {
+			msg, _ := json.Marshal(global.NewResult(&global.Result{
+				Code: 0,
+				Msg:  "没有更多数据",
+				Page: page,
+				Size: size,
+			}))
+			rw.Write(msg)
+			return
 		}
-		fmt.Println("detail arr:", arr)
 
-		p, err := strconv.Atoi(page)
+		d := make([]interface{}, size)
+
+		result, err := DB.Query("select aid,size,title,uptime,note from essay where aid > ? and aid < ?", (page-1)*size, page*size+1)
+		global.CheckErr(err, "")
+
+		index := 0
+		for result.Next() {
+			var data global.Essay_list
+			err = result.Scan(&data.Id, &data.Size, &data.Title, &data.Uptime, &data.Note)
+			if err != nil {
+				break
+			}
+			d[index] = map[string]interface{}{
+				"id":     data.Id,
+				"size":   data.Size,
+				"title":  data.Title,
+				"uptime": data.Uptime,
+				"note":   data.Note,
+			}
+			index++
+		}
+		result.Close()
+
 		if err != nil {
 			msg, _ := json.Marshal(global.NewResult(&global.Result{
 				Code: 0,
-				Msg:  "page错误",
+				Msg:  fmt.Sprint(err),
+				Page: page,
+				Size: size,
 			}))
 			rw.Write(msg)
-		}
-		s, err := strconv.Atoi(size)
-		if err != nil {
-			msg, _ := json.Marshal(global.NewResult(&global.Result{
-				Code: 0,
-				Msg:  "size错误",
-			}))
-			rw.Write(msg)
+			return
 		}
 
-		fmt.Println("detail:", arr)
-		if len(arr) == 0 {
-			d[0] = map[string]string{
-				"error": "没有数据",
-			}
-		} else {
-			fmt.Println("开始获取详情 ...", p, s)
-			// tep := 0
-			for i := (p - 1) * s; i < p*s; i++ {
-				fmt.Printf("detail len: %d\t%t\n", len(arr), len(arr) > i)
-
-				if len(arr) > i {
-					// m := global.GetByEssay(arr[i])
-					// if m["id"] != "" {
-					// 	fmt.Println("get detail data:", m["name"])
-
-					// 	d[tep] = map[string]string{
-					// 		"id":    m["id"],
-					// 		"cTime": m["createdDateTime"],
-					// 		"mTime": m["lastModifiedDateTime"],
-					// 		"name":  m["name"],
-					// 		"note":  m["note"],
-					// 		"size":  m["size"],
-					// 	}
-					// 	tep++
-					// }
-				}
-			}
-		}
-
-		a := make([]interface{}, len(d))
-		for k, v := range d {
-			a[k] = v
-		}
-
-		// fmt.Printf("more: %v;len: %d, %d * %d = %d\n", len(arr) > p*s, len(arr), p, s, p*s)
 		msg, _ := json.Marshal(global.NewResult(&global.Result{
 			Code: 200,
-			Data: a,
-			Page: p,
-			Size: s,
-			More: len(arr) > p*s,
+			Data: d,
+			Page: page,
+			Size: size,
+			More: int64(page*size) < count,
 		}))
 		rw.Write(msg)
 	})

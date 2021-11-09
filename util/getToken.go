@@ -106,7 +106,6 @@ func getAccessToken() {
 		// 更新detail
 		getDetail()
 	}
-
 }
 
 // 刷新token

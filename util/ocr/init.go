@@ -10,22 +10,41 @@ import (
 	"net/url"
 	"strings"
 
+	"api.ikurum.cn/config"
 	"api.ikurum.cn/global"
 )
 
+type baidu struct {
+	API_KEY    string
+	SECRET_KEY string
+	TOKEN_URL  string
+	API_URL    string
+}
+
+var bai baidu
+
 // 获取 token
 func fetch_token() error {
-	fmt.Println("获取更新 token ...")
+	fmt.Println("获取更新 baidu token ...")
+
+	DB := global.OpenDB()
+	err := DB.QueryRow("select API_KEY,SECRET_KEY,TOKEN_URL,API_URL from global where gid=1").Scan(
+		&bai.API_KEY,
+		&bai.SECRET_KEY,
+		&bai.TOKEN_URL,
+		&bai.API_URL,
+	)
+	global.CheckErr(err, "")
 
 	var params = make(url.Values)
 	params.Add("grant_type", "client_credentials")
-	params.Add("client_id", global.API_KEY)
-	params.Add("client_secret", global.SECRET_KEY)
+	params.Add("client_id", bai.API_KEY)
+	params.Add("client_secret", bai.SECRET_KEY)
 
 	post_data := params.Encode()
 
 	// 获取token
-	req, _ := http.NewRequest("POST", global.TOKEN_URL, strings.NewReader(post_data))
+	req, _ := http.NewRequest("POST", bai.TOKEN_URL, strings.NewReader(post_data))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := (&http.Client{}).Do(req)
@@ -38,9 +57,9 @@ func fetch_token() error {
 	jsonTxt, _ := ioutil.ReadAll(resp.Body)
 	json.Unmarshal(jsonTxt, &j)
 
-	global.Access_token = j["access_token"].(string)
+	config.Baidu_Access_token = j["access_token"].(string)
 
-	if global.Access_token != "" {
+	if config.Baidu_Access_token != "" {
 		return nil
 	} else {
 		log.Fatal("获取 token 错误:", j)
@@ -62,22 +81,22 @@ func Read_file(file []byte, t float64) []byte {
 		fmt.Println("type:", s[0], s[1])
 		switch s[0] {
 		case "1":
-			url = global.OCR_URL
+			url = config.OCR_URL
 		case "2":
-			url = global.FACE_URL
+			url = config.FACE_URL
 		case "3":
-			url = global.IMAGE_URL
+			url = config.IMAGE_URL
 		}
 
 		for i := 0; i < len(url); i++ {
 			if url[i]["type"] == s[1] {
 				switch s[0] {
 				case "1":
-					rt = getTxt(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], global.API_URL+url[i]["url"]+"?access_token="+global.Access_token)
+					rt = getTxt(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], bai.API_URL+url[i]["url"]+"?access_token="+config.Baidu_Access_token)
 				case "2":
-					rt = getFace(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], global.API_URL+url[i]["url"]+"?access_token="+global.Access_token)
+					rt = getFace(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], bai.API_URL+url[i]["url"]+"?access_token="+config.Baidu_Access_token)
 				case "3":
-					rt = getImg(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], global.API_URL+url[i]["url"]+"?access_token="+global.Access_token)
+					rt = getImg(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], bai.API_URL+url[i]["url"]+"?access_token="+config.Baidu_Access_token)
 				}
 			}
 		}

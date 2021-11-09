@@ -12,7 +12,7 @@ import (
 
 	"database/sql"
 
-	"api.ikurum.cn/initDB"
+	"api.ikurum.cn/config"
 	"github.com/boltdb/bolt"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -30,22 +30,27 @@ type Result struct {
 	Size int         `json:"size"`
 }
 
+// 文章列表
+type Essay_list struct {
+	Id     int    `json:"id"`
+	Title  string `json:"title"`
+	Size   string `json:"size"`
+	Note   string `json:"note"`
+	Uptime int    `json:"upTime"`
+}
+
 // 文章详情
 type Essay struct {
-	Id      int
-	Content string
-	Title   string
-	Size    string
-	Note    string
-	Uptime  int
-	Err     string
+	Essay_list
+	Content string `json:"content"`
+	Err     string `json:"err"`
 }
 
 // 链接数据库
 func OpenDB() *sql.DB {
 	var c = make(map[string]string)
-	if initDB.DB["ip"] != "" {
-		c = initDB.DB
+	if config.DB["ip"] != "" {
+		c = config.DB
 	} else {
 		c = initdb
 	}
@@ -232,28 +237,29 @@ func NewResult(res *Result) *Result {
 	return res
 }
 
-// 设置一言
+// 数据库初始化 设置一言
 func SetOne() {
-	var s string
-
 	fin, err := os.OpenFile("./one", os.O_RDONLY, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer fin.Close()
 
+	DB := OpenDB()
+	sql := "insert into one(md) values(?)"
+	stmt, err := DB.Prepare(sql)
+	CheckErr(err, "")
+	defer stmt.Close()
+
 	sc := bufio.NewScanner(fin)
-	/*default split the file use '\n'*/
 	for sc.Scan() {
 		t := sc.Text()
-		s = s + t + "*_*"
+		stmt.Exec(t)
 	}
 
 	if err = sc.Err(); err != nil {
 		log.Fatal(err)
 	}
-
-	UpdateByDB("oneBucket", "data", s[0:len(s)-3])
 }
 
 // 设置 请求头
