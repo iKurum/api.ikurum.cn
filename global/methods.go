@@ -25,8 +25,8 @@ type Result struct {
 	Data interface{} `json:"data"`
 	Msg  string      `json:"msg"`
 	More bool        `json:"more"`
-	Page int         `json:"page"`
-	Size int         `json:"size"`
+	Page int64       `json:"page"`
+	Size int64       `json:"size"`
 }
 
 // 文章列表

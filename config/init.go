@@ -1,6 +1,6 @@
 package config
 
-var Online = true
+var Online = false
 
 var DB = map[string]string{
 	"title":    "", // 数据库名称，如mysql

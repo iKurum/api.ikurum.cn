@@ -1,8 +1,10 @@
 package v1
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -15,18 +17,28 @@ func init() {
 		global.SetHeader(rw)
 		DB := global.OpenDB()
 
+		defer func() {
+			if err := recover(); err != nil {
+				msg, _ := json.Marshal(global.NewResult(&global.Result{
+					Code: 0,
+					Msg:  fmt.Sprint(err),
+				}))
+				rw.Write(msg)
+			}
+		}()
+
 		var count int64
 		DB.QueryRow("select count(*) from essay").Scan(&count)
 		fmt.Println("count", count)
 
 		query := r.URL.Query()
-		page := 1
-		size := 10
+		var page int64 = 1
+		var size int64 = 10
 
 		var err error
 		if query.Get("page") != "" {
-			page, err = strconv.Atoi(query.Get("page"))
-			if err != nil {
+			page, err = strconv.ParseInt(query.Get("page"), 10, 64)
+			if err != nil || page < 1 {
 				msg, _ := json.Marshal(global.NewResult(&global.Result{
 					Code: 0,
 					Msg:  "参数page错误",
@@ -37,8 +49,8 @@ func init() {
 			fmt.Println("query page:", page)
 		}
 		if query.Get("size") != "" {
-			size, err = strconv.Atoi(query.Get("size"))
-			if err != nil {
+			size, err = strconv.ParseInt(query.Get("size"), 10, 64)
+			if err != nil || size < 1 || size > 20 {
 				msg, _ := json.Marshal(global.NewResult(&global.Result{
 					Code: 0,
 					Msg:  "参数size错误",
@@ -50,7 +62,8 @@ func init() {
 		}
 
 		// 超出数据
-		if int64((page-1)*size) >= count {
+		var csize int64 = size
+		if (page-1)*size >= count {
 			msg, _ := json.Marshal(global.NewResult(&global.Result{
 				Code: 0,
 				Msg:  "没有更多数据",
@@ -59,17 +72,32 @@ func init() {
 			}))
 			rw.Write(msg)
 			return
+		} else {
+			if page*size >= count {
+				csize = count - (page-1)*size
+			}
 		}
 
-		d := make([]interface{}, size)
+		log.Println("d size:", csize)
+		d := make([]interface{}, csize)
 
-		result, err := DB.Query("select aid,size,title,uptime,addtime,note from essay where aid > ? and aid < ?", (page-1)*size, page*size+1)
-		global.CheckErr(err, "")
+		var result *sql.Rows
+		if page > 1 {
+			stmt, err := DB.Prepare("select aid,size,title,addtime,note from essay order by addtime desc limit ?,?")
+			global.CheckErr(err, "")
+			result, err = stmt.Query(csize, (page-1)*size)
+			global.CheckErr(err, "")
+		} else {
+			stmt, err := DB.Prepare("select aid,size,title,addtime,note from essay order by addtime desc limit ?")
+			global.CheckErr(err, "")
+			result, err = stmt.Query(csize)
+			global.CheckErr(err, "")
+		}
 
 		index := 0
 		for result.Next() {
 			var data global.Essay_list
-			err = result.Scan(&data.Id, &data.Size, &data.Title, &data.Uptime, &data.Addtime, &data.Note)
+			err = result.Scan(&data.Id, &data.Size, &data.Title, &data.Addtime, &data.Note)
 			if err != nil {
 				break
 			}
@@ -81,6 +109,9 @@ func init() {
 				"note":    data.Note,
 			}
 			index++
+			if index >= int(csize) {
+				break
+			}
 		}
 		result.Close()
 
