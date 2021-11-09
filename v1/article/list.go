@@ -77,8 +77,7 @@ func init() {
 				"id":      data.Id,
 				"size":    data.Size,
 				"title":   data.Title,
-				"uptime":  data.Uptime,
-				"addtime": data.Addtime,
+				"addTime": data.Addtime,
 				"note":    data.Note,
 			}
 			index++
