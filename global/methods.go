@@ -13,7 +13,6 @@ import (
 	"database/sql"
 
 	"api.ikurum.cn/config"
-	"github.com/boltdb/bolt"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -98,63 +97,6 @@ func GetByEssay(essayId string) Essay {
 		essay.Err = "参数id错误"
 	}
 	return essay
-}
-
-// 删除bucket
-func DelBucket(bucket string) error {
-	db, err := bolt.Open("ikurum.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	return db.Update(func(t *bolt.Tx) error {
-		b, e := t.CreateBucketIfNotExists([]byte(bucket))
-		if e != nil {
-			e = b.Delete([]byte(bucket))
-		}
-		return e
-	})
-}
-
-// db 获取单个数据
-func GetByDB(bucket string, k string) string {
-	db, err := bolt.Open("ikurum.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	var s string
-	db.View(func(t *bolt.Tx) error {
-		b := t.Bucket([]byte(bucket))
-		s = string(b.Get([]byte(k))[:])
-		return nil
-	})
-
-	return s
-}
-
-// db 更新单个数据
-func UpdateByDB(bucket string, k string, v string) error {
-	db, err := bolt.Open("ikurum.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	err = db.Update(func(t *bolt.Tx) error {
-		b, err := t.CreateBucketIfNotExists([]byte(bucket))
-		if err != nil {
-			return fmt.Errorf("create global bucket: %s", err)
-		}
-
-		err = b.Put([]byte(k), []byte(v))
-		fmt.Printf("更新%s bucket数据: %s\n", bucket, k)
-		return err
-	})
-
-	return err
 }
 
 // 请求数据
