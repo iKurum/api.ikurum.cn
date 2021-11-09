@@ -179,9 +179,12 @@ func getDetail() {
 				for name, value := range da {
 					if name == "@microsoft.graph.downloadUrl" {
 						reg := regexp.MustCompile(`[A-Za-z]`)
-						c := strings.TrimSpace(reg.ReplaceAllString(da["lastModifiedDateTime"].(string), " "))
-						time, _ := time.ParseInLocation("2006-01-02 15:04:05", c, time.Local)
-						da["lastModifiedDateTime"] = time.Unix() * 1000
+						l := strings.TrimSpace(reg.ReplaceAllString(da["lastModifiedDateTime"].(string), " "))
+						c := strings.TrimSpace(reg.ReplaceAllString(da["createdDateTime"].(string), " "))
+						time_last, _ := time.ParseInLocation("2006-01-02 15:04:05", l, time.Local)
+						time_create, _ := time.ParseInLocation("2006-01-02 15:04:05", c, time.Local)
+						da["lastModifiedDateTime"] = time_last.Unix() * 1000
+						da["createdDateTime"] = time_create.Unix() * 1000
 						ch <- value.(string)
 						go setDetail(da, ch)
 					}
@@ -197,23 +200,24 @@ func setDetail(da map[string]interface{}, ch chan string) {
 
 	var e error = nil
 	if e = global.HasEssay(da["id"].(string)); e == nil {
-		var time int64
-		err := DB.QueryRow("select uptime from essay where essayId=?", da["id"].(string)).Scan(&time)
-		global.CheckErr(err, "")
+		var (
+			time_create int64
+			time_last   int64
+		)
+		e = DB.QueryRow("select uptime, addtime from essay where essayId=?", da["id"].(string)).Scan(
+			&time_last,
+			&time_create,
+		)
+		global.CheckErr(e, "")
 
-		if da["lastModifiedDateTime"].(int64) != time {
-			fmt.Printf("lastModifiedDateTime: %d\t%d\n", da["lastModifiedDateTime"], time)
+		if da["lastModifiedDateTime"].(int64) != time_last ||
+			da["createdDateTime"].(int64) != time_create {
 			e = fmt.Errorf("essay detail has new")
-			fmt.Println("更新essay detail:", da["id"].(string))
 		}
-	} else {
-		fmt.Println("创建essay detail:", da["id"].(string))
 	}
 
 	if e != nil {
-		// 首次创建essay bucket
-		// 或更新essay detail
-		fmt.Println("essay detail nil ...", da["id"].(string))
+		// 创建或更新essay detail
 		if md := getMD(da["@microsoft.graph.downloadUrl"].(string), da["id"].(string)); md {
 			f, err := ioutil.ReadFile("md/" + da["id"].(string) + ".md")
 			if err != nil {
@@ -233,40 +237,44 @@ func toSetDetail(e error, f string, data map[string]interface{}, ch chan string)
 
 	if e == sql.ErrNoRows {
 		// insert
-		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, uptime)values(?,?,?,?,?,?)")
+		log.Println("insert essay", data["id"])
+		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, uptime, addtime)values(?,?,?,?,?,?,?)")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
-			data["id"].(string),
-			data["name"].(string),
-			data["size"].(string),
+			data["id"],
+			data["name"],
+			data["size"],
 			f,
 			a[0],
 			data["lastModifiedDateTime"],
+			data["createdDateTime"],
 		)
-		global.CheckErr(err, "exec failed")
+		global.CheckErr(err, "insert exec failed")
 
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
-		global.CheckErr(err, "rows failed")
-		fmt.Println("insert essay succ:", row, data["id"].(string))
+		global.CheckErr(err, "insert rows failed")
+		fmt.Println("insert essay succ:", row, data["id"])
 	} else {
 		// update
-		sql, err := DB.Prepare("UPDATE user SET title=?, size=?, content=?, note=?, uptime=? WHERE essayId=?")
+		log.Println("update essay", data["id"])
+		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, uptime=?, addtime=? where essayId=?")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
-			data["name"].(string),
-			data["size"].(string),
+			data["name"],
+			data["size"],
 			f,
 			a[0],
 			data["lastModifiedDateTime"],
-			data["id"].(string),
+			data["createdDateTime"],
+			data["id"],
 		)
-		global.CheckErr(err, "exec failed")
+		global.CheckErr(err, "update exec failed")
 
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
-		global.CheckErr(err, "rows failed")
-		fmt.Println("update essay succ:", row, data["id"].(string))
+		global.CheckErr(err, "update rows failed")
+		fmt.Println("update essay succ:", row, data["id"])
 	}
 
 	<-ch
@@ -286,7 +294,6 @@ func getMD(url string, id string) bool {
 	if err != nil {
 		return false
 	}
-	fmt.Println("resp body:", resp.Body)
 	io.Copy(f, resp.Body)
 
 	return true

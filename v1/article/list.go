@@ -63,22 +63,23 @@ func init() {
 
 		d := make([]interface{}, size)
 
-		result, err := DB.Query("select aid,size,title,uptime,note from essay where aid > ? and aid < ?", (page-1)*size, page*size+1)
+		result, err := DB.Query("select aid,size,title,uptime,addtime,note from essay where aid > ? and aid < ?", (page-1)*size, page*size+1)
 		global.CheckErr(err, "")
 
 		index := 0
 		for result.Next() {
 			var data global.Essay_list
-			err = result.Scan(&data.Id, &data.Size, &data.Title, &data.Uptime, &data.Note)
+			err = result.Scan(&data.Id, &data.Size, &data.Title, &data.Uptime, &data.Addtime, &data.Note)
 			if err != nil {
 				break
 			}
 			d[index] = map[string]interface{}{
-				"id":     data.Id,
-				"size":   data.Size,
-				"title":  data.Title,
-				"uptime": data.Uptime,
-				"note":   data.Note,
+				"id":      data.Id,
+				"size":    data.Size,
+				"title":   data.Title,
+				"uptime":  data.Uptime,
+				"addtime": data.Addtime,
+				"note":    data.Note,
 			}
 			index++
 		}

@@ -31,11 +31,12 @@ type Result struct {
 
 // 文章列表
 type Essay_list struct {
-	Id     int    `json:"id"`
-	Title  string `json:"title"`
-	Size   string `json:"size"`
-	Note   string `json:"note"`
-	Uptime int    `json:"upTime"`
+	Id      int    `json:"id"`
+	Title   string `json:"title"`
+	Size    string `json:"size"`
+	Note    string `json:"note"`
+	Uptime  int64  `json:"upTime"`
+	Addtime int64  `json:"addTime"`
 }
 
 // 文章详情
@@ -84,13 +85,13 @@ func GetByEssay(essayId string) Essay {
 	DB := OpenDB()
 
 	var essay Essay
-	err := DB.QueryRow("select aid,title,note,content,size,uptime from essay where aid=?", essayId).Scan(
+	err := DB.QueryRow("select aid,title,content,size,uptime,addtime from essay where aid=?", essayId).Scan(
 		&essay.Id,
 		&essay.Title,
-		&essay.Note,
 		&essay.Content,
 		&essay.Size,
 		&essay.Uptime,
+		&essay.Addtime,
 	)
 	t := CheckErr(err, "")
 	if t == 1 {

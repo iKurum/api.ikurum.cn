@@ -30,16 +30,7 @@ func init() {
 				msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 0, Msg: m.Err}))
 				rw.Write(msg)
 			} else {
-				var data = map[string]interface{}{
-					"id":      m.Id,
-					"content": m.Content,
-					"title":   m.Title,
-					"size":    m.Size,
-					"note":    m.Note,
-					"uptime":  m.Uptime,
-				}
-
-				msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: data}))
+				msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: m}))
 				rw.Write(msg)
 			}
 		} else {
