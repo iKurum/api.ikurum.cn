@@ -1,11 +1,11 @@
 1. mysql 数据库表 `global` 初始化：
    | gid | BASE_URL | CLIENT_ID | CLIENT_SECRET | API_KEY | SECRET_KEY | API_URL | TOKEN_URL |
    | :--:| :------: | :-------: | :-----------: | :-----: | :--------: | :-----: | :-------: |
-   | 1 | https://graph.microsoft.com/v1.0/me | `microsoft azure` 后台添加程序获得 | `microsoft azure` 后台添加程序获得 | `百度智能云`注册应用获取 | `百度智能云`注册应用获取 | `百度智能云`注册应用获取 |`百度智能云`注册应用获取 |
+   | 1 | https://graph.microsoft.com/v1.0/me | [`microsoft azure`](https://portal.azure.com/) 后台添加程序获得 | [`microsoft azure`](https://portal.azure.com/) 后台添加程序获得 | [`百度智能云`](https://cloud.baidu.com/) 注册应用获取 | [`百度智能云`](https://cloud.baidu.com/) 注册应用获取 | [`百度智能云`](https://cloud.baidu.com/) 注册应用获取 | [`百度智能云`](https://cloud.baidu.com/) 注册应用获取 |
 2. mysql 数据库表 `user` 初始化：
    | uid | name | email | photo | refresh | access | uptime |
    | :-: | :--: | :---: | :---: | :-----: | :----: | :----: |
-   | 1 | `microsoft azure`获取 | `microsoft azure`获取 | `microsoft azure`获取(longText) | `rclone`获取(longText) | `rclone`获取(longText) | bigint |
+   | 1 | [`microsoft azure`](https://portal.azure.com/) 获取 | [`microsoft azure`](https://portal.azure.com/) 获取 | [`microsoft azure`](https://portal.azure.com/) 获取(longText) | [`rclone`](https://rclone.org/) 获取onedrive(longText) | [`rclone`](https://rclone.org/) 获取onedrive(longText) | bigint |
 3. mysql 数据库表 `essay` 初始化：
    | aid | essayId | title | size | note | content | addtime | uptime |
    | :-: | :-----: | :---: | :--: | :--: | :-----: | :-----: | :----: |
