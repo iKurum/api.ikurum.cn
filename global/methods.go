@@ -49,10 +49,10 @@ type Essay struct {
 // 链接数据库
 func OpenDB() *sql.DB {
 	var c = make(map[string]string)
-	if config.DB["ip"] != "" {
-		c = config.DB
-	} else {
+	if initdb["ip"] != "" {
 		c = initdb
+	} else {
+		c = config.DB
 	}
 	path := strings.Join([]string{c["user"], ":", c["pw"], "@tcp(", c["ip"], ":", c["port"], ")/", c["database"], "?charset=utf8"}, "")
 	DB, _ := sql.Open(c["title"], path)
