@@ -42,10 +42,12 @@ type Essay_list struct {
 // 文章详情
 type Essay struct {
 	Essay_list
-	Content  string `json:"content"`
-	Next     int    `json:"next"`
-	Previous int    `json:"previous"`
-	Err      string `json:"err"`
+	Content       string `json:"content"`
+	Next          int    `json:"next"`
+	Nexttitle     string `json:"nextTitle"`
+	Previous      int    `json:"previous"`
+	Previoustitle string `json:"previousTitle"`
+	Err           string `json:"err"`
 }
 
 // 链接数据库
@@ -101,11 +103,17 @@ func GetByEssay(essayId string) Essay {
 	}
 
 	//获取上一条 id
-	err = DB.QueryRow("select aid from essay where addtime>? order by addtime asc", essay.Addtime).Scan(&essay.Previous)
+	err = DB.QueryRow("select aid,title from essay where addtime<? order by addtime desc", essay.Addtime).Scan(
+		&essay.Previous,
+		&essay.Previoustitle,
+	)
 	CheckErr(err, "")
 
 	//获取下一条 id
-	err = DB.QueryRow("select aid from essay where addtime<? order by addtime desc", essay.Addtime).Scan(&essay.Next)
+	err = DB.QueryRow("select aid,title from essay where addtime>? order by addtime asc", essay.Addtime).Scan(
+		&essay.Next,
+		&essay.Nexttitle,
+	)
 	CheckErr(err, "")
 
 	return essay

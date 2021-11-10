@@ -237,6 +237,8 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 
 	a := strings.Split(f, "<!-- more -->")
 
+	data["name"] = strings.Split(data["name"].(string), ".md")[0]
+
 	if e == sql.ErrNoRows {
 		// insert
 		log.Println("insert essay", data["name"])
@@ -256,7 +258,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
 		global.CheckErr(err, "insert rows failed")
-		fmt.Println("insert essay succ:", row, data["id"])
+		fmt.Println("insert essay succ:", row, data["name"])
 	} else {
 		// update
 		log.Println("update essay", data["name"])
@@ -276,7 +278,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
 		global.CheckErr(err, "update rows failed")
-		fmt.Println("update essay succ:", row, data["id"])
+		fmt.Println("update essay succ:", row, data["name"])
 	}
 }
 
