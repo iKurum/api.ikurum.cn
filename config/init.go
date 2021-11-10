@@ -1,18 +1,34 @@
 package config
 
-var Online = false
+import "log"
 
-var DB = map[string]string{
-	"title":    "", // 数据库名称，如mysql
-	"user":     "",
-	"pw":       "",
-	"ip":       "",
-	"port":     "",
-	"database": "",
+func init() {
+	log.Println("init mysql ip")
+	if Online {
+		DB["ip"] = "127.0.0.1"
+	} else {
+		DB["ip"] = "/* 远端ip */"
+	}
 }
 
+// true		打包后，连接数据库
+// false	本地启项目，连接远端数据库
+var Online = true
+
+// 数据库连接信息
+var DB = map[string]string{
+	"title":    "mysql",
+	"user":     "",
+	"pw":       "",
+	"port":     "",
+	"database": "",
+	"ip":       "", // 在init中配置
+}
+
+// 百度智能云 应用 token
 var Baidu_Access_token string
 
+// 百度智能云 应用
 var OCR_URL = []map[string]string{
 	{
 		"name": "通用文字（标准版）",
@@ -50,7 +66,6 @@ var OCR_URL = []map[string]string{
 		"type": "64",
 	},
 }
-
 var FACE_URL = []map[string]string{
 	{
 		"name": "人脸检测",
@@ -68,7 +83,6 @@ var FACE_URL = []map[string]string{
 		"type": "4",
 	},
 }
-
 var IMAGE_URL = []map[string]string{
 	{
 		"name": "通用物体和场景识别",
