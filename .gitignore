@@ -1,8 +1,9 @@
 .vscode/
-md/
+
+go.sum
 
 *.db
-
-api.ikurum.cn
 *.jpg
+md/
+api.ikurum.cn
 global/init.go
