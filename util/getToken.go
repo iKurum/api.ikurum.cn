@@ -73,6 +73,9 @@ func getAccessToken() {
 	// 更新photo
 	global.GetBody("/photos/120x120/$value", "img")
 
+	// 更新detail
+	getDetail()
+
 	// 更新info
 	jsonTxt := global.GetBody("/", "")
 	var j map[string]interface{}
@@ -102,9 +105,6 @@ func getAccessToken() {
 			global.CheckErr(err, "rows failed")
 			fmt.Println("update user name succ:", row)
 		}
-
-		// 更新detail
-		getDetail()
 	}
 }
 
@@ -166,7 +166,7 @@ func getDetail() {
 	fmt.Println("开始检查文章更新 ...")
 	jsonTxt = global.GetBody("/drive/root:/article:/children?$top=100000", "")
 
-	ch := make(chan string, 6)
+	ch := make(chan map[string]interface{}, 6)
 
 	var j map[string]interface{}
 	json.Unmarshal(jsonTxt, &j)
@@ -176,7 +176,7 @@ func getDetail() {
 			data := v.([]interface{})
 			for i := 0; i < len(data); i++ {
 				da := data[i].(map[string]interface{})
-				for name, value := range da {
+				for name := range da {
 					if name == "@microsoft.graph.downloadUrl" {
 						reg := regexp.MustCompile(`[A-Za-z]`)
 						l := strings.TrimSpace(reg.ReplaceAllString(da["lastModifiedDateTime"].(string), " "))
@@ -185,8 +185,8 @@ func getDetail() {
 						time_create, _ := time.ParseInLocation("2006-01-02 15:04:05", c, time.Local)
 						da["lastModifiedDateTime"] = time_last.Unix() * 1000
 						da["createdDateTime"] = time_create.Unix() * 1000
-						ch <- value.(string)
-						go setDetail(da, ch)
+						ch <- da
+						go setDetail(ch)
 					}
 				}
 			}
@@ -195,8 +195,9 @@ func getDetail() {
 }
 
 // 检查文章状态
-func setDetail(da map[string]interface{}, ch chan string) {
+func setDetail(ch chan map[string]interface{}) {
 	DB := global.OpenDB()
+	da := <-ch
 
 	var e error = nil
 	if e = global.HasEssay(da["id"].(string)); e == nil {
@@ -210,6 +211,7 @@ func setDetail(da map[string]interface{}, ch chan string) {
 		)
 		global.CheckErr(e, "")
 
+		fmt.Printf("%s: %d - %d\n", da["name"], da["lastModifiedDateTime"], time_last)
 		if da["lastModifiedDateTime"].(int64) != time_last ||
 			da["createdDateTime"].(int64) != time_create {
 			e = fmt.Errorf("essay detail has new")
@@ -224,20 +226,20 @@ func setDetail(da map[string]interface{}, ch chan string) {
 				log.Fatal(err)
 			}
 
-			toSetDetail(e, string(f), da, ch)
+			toSetDetail(e, string(f), da)
 		}
 	}
 }
 
 // 存储文章详情
-func toSetDetail(e error, f string, data map[string]interface{}, ch chan string) {
+func toSetDetail(e error, f string, data map[string]interface{}) {
 	DB := global.OpenDB()
 
 	a := strings.Split(f, "<!-- more -->")
 
 	if e == sql.ErrNoRows {
 		// insert
-		log.Println("insert essay", data["id"])
+		log.Println("insert essay", data["name"])
 		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, uptime, addtime)values(?,?,?,?,?,?,?)")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
@@ -257,7 +259,7 @@ func toSetDetail(e error, f string, data map[string]interface{}, ch chan string)
 		fmt.Println("insert essay succ:", row, data["id"])
 	} else {
 		// update
-		log.Println("update essay", data["id"])
+		log.Println("update essay", data["name"])
 		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, uptime=?, addtime=? where essayId=?")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
@@ -276,8 +278,6 @@ func toSetDetail(e error, f string, data map[string]interface{}, ch chan string)
 		global.CheckErr(err, "update rows failed")
 		fmt.Println("update essay succ:", row, data["id"])
 	}
-
-	<-ch
 }
 
 // 获取文章详情
