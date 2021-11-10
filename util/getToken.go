@@ -192,6 +192,7 @@ func getDetail() {
 			}
 		}
 	}
+	log.Println("文章更新完成")
 }
 
 // 检查文章状态
@@ -211,7 +212,6 @@ func setDetail(ch chan map[string]interface{}) {
 		)
 		global.CheckErr(e, "")
 
-		fmt.Printf("%s: %d - %d\n", da["name"], da["lastModifiedDateTime"], time_last)
 		if da["lastModifiedDateTime"].(int64) != time_last ||
 			da["createdDateTime"].(int64) != time_create {
 			e = fmt.Errorf("essay detail has new")

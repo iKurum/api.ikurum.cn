@@ -42,8 +42,10 @@ type Essay_list struct {
 // 文章详情
 type Essay struct {
 	Essay_list
-	Content string `json:"content"`
-	Err     string `json:"err"`
+	Content  string `json:"content"`
+	Next     int    `json:"next"`
+	Previous int    `json:"previous"`
+	Err      string `json:"err"`
 }
 
 // 链接数据库
@@ -80,7 +82,7 @@ func HasEssay(essayId string) error {
 	return nil
 }
 
-// 获取essay数据
+// 获取essay详情
 func GetByEssay(essayId string) Essay {
 	DB := OpenDB()
 
@@ -97,6 +99,15 @@ func GetByEssay(essayId string) Essay {
 	if t == 1 {
 		essay.Err = "参数id错误"
 	}
+
+	//获取上一条 id
+	err = DB.QueryRow("select aid from essay where addtime>? order by addtime asc", essay.Addtime).Scan(&essay.Previous)
+	CheckErr(err, "")
+
+	//获取下一条 id
+	err = DB.QueryRow("select aid from essay where addtime<? order by addtime desc", essay.Addtime).Scan(&essay.Next)
+	CheckErr(err, "")
+
 	return essay
 }
 
