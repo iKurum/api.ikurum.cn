@@ -1,7 +1,7 @@
 1. mysql 数据库表 `global` 初始化：
-   | gid | BASE_URL | CLIENT_ID | CLIENT_SECRET | API_KEY | SECRET_KEY | API_URL TOKEN_URL |
-   | :--:| :------: | :-------: | :-----------: | :-----: | :--------: | :---------------: |
-   | 1 | https://graph.microsoft.com/v1.0/me | `microsoft azure` 后台添加程序获得 | `microsoft azure` 后台添加程序获得 | `百度智能云`注册应用获取 | `百度智能云`注册应用获取 | `百度智能云`注册应用获取 |
+   | gid | BASE_URL | CLIENT_ID | CLIENT_SECRET | API_KEY | SECRET_KEY | API_URL | TOKEN_URL |
+   | :--:| :------: | :-------: | :-----------: | :-----: | :--------: | :-----: | :-------: |
+   | 1 | https://graph.microsoft.com/v1.0/me | `microsoft azure` 后台添加程序获得 | `microsoft azure` 后台添加程序获得 | `百度智能云`注册应用获取 | `百度智能云`注册应用获取 | `百度智能云`注册应用获取 |`百度智能云`注册应用获取 |
 2. mysql 数据库表 `user` 初始化：
    | uid | name | email | photo | refresh | access | uptime |
    | :-: | :--: | :---: | :---: | :-----: | :----: | :----: |
