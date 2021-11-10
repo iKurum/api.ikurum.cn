@@ -14,7 +14,10 @@
    | oid | md |
    | :-: | :-: |
    | 自增 | longText |
-5. 填写完善`config.DB`，连接数据库。初始化`one`数据，可以运行`global.SetOne`函数。
+5. TIPs
+   - 填写完善 `config.DB`，连接数据库。
+   - 初始化 `one` 数据，可以运行 `global.SetOne` 函数。
+   - `onedrive` 增加文件夹 `article`，文字以 `markdown` 存储。
 
 =================
 - 运行 `go run main.go`  
