@@ -20,7 +20,7 @@
    - `onedrive` 增加文件夹 `article`，文字以 `markdown` 存储。
 
 =================
-- 运行 `go run main.go`  
+- 运行 `go run main.go`，在windows运行需要更改环境设置 `go env -w GOOS=windows`  
 
 - 打包 `go build .`，在windows打包到linux需要更改环境设置 `go env -w GOOS=linux`  
 
