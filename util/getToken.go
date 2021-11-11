@@ -18,6 +18,29 @@ import (
 	"api.ikurum.cn/global"
 )
 
+type intervalTime struct {
+	interval time.Duration
+	job      func()
+	enabled  bool
+	wg       sync.WaitGroup
+}
+
+func (it *intervalTime) isr() {
+	if it.enabled {
+		it.job()
+		time.AfterFunc(it.interval, it.isr)
+	} else {
+		it.wg.Done()
+	}
+}
+
+func (it *intervalTime) start() {
+	if it.enabled {
+		it.wg.Add(1)
+		time.AfterFunc(it.interval, it.isr)
+	}
+}
+
 type globalConfig struct {
 	CLIENT_ID     string
 	CLIENT_SECRET string
@@ -136,29 +159,6 @@ func getToken() (string, string) {
 	return accessToken.(string), refreshToken.(string)
 }
 
-type intervalTime struct {
-	interval time.Duration
-	job      func()
-	enabled  bool
-	wg       sync.WaitGroup
-}
-
-func (it *intervalTime) isr() {
-	if it.enabled {
-		it.job()
-		time.AfterFunc(it.interval, it.isr)
-	} else {
-		it.wg.Done()
-	}
-}
-
-func (it *intervalTime) start() {
-	if it.enabled {
-		it.wg.Add(1)
-		time.AfterFunc(it.interval, it.isr)
-	}
-}
-
 // 更新文章
 func getDetail() {
 	var jsonTxt []byte
@@ -234,6 +234,33 @@ func setDetail(ch chan map[string]interface{}) {
 // 存储文章详情
 func toSetDetail(e error, f string, data map[string]interface{}) {
 	DB := global.OpenDB()
+	reg := regexp.MustCompile(`^<!-- config {[\s\S]*} -->`)
+	resf := reg.FindAllStringSubmatch(f, -1)
+
+	var (
+		archive  string = ""
+		sql_arch string
+	)
+	if len(resf) != 0 && len(resf[0]) != 0 {
+		f = strings.Replace(f, resf[0][0], "", 1)
+
+		archive = strings.Replace(resf[0][0], "<!-- config {", "", 1)
+		archive = strings.Replace(archive, "} -->", "", 1)
+		archive = strings.ReplaceAll(archive, " ", "")
+	}
+
+	if archive != "" {
+		archa := strings.Split(archive, "\r\n")
+		for i := 0; i < len(archa); i++ {
+			a := strings.Split(archa[i], ":")
+
+			if a[0] == "archive" && a[1] != "" {
+				sql_arch = strings.ReplaceAll(a[1], "\"\"", ",")
+				sql_arch = strings.ReplaceAll(sql_arch, "\"", "")
+				sql_arch = strings.ReplaceAll(sql_arch, "_", " ")
+			}
+		}
+	}
 
 	a := strings.Split(f, "<!-- more -->")
 
@@ -242,7 +269,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 	if e == sql.ErrNoRows {
 		// insert
 		log.Println("insert essay", data["name"])
-		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, uptime, addtime)values(?,?,?,?,?,?,?)")
+		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, archive, uptime, addtime)values(?,?,?,?,?,?,?)")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
 			data["id"],
@@ -250,6 +277,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 			data["size"],
 			f,
 			a[0],
+			sql_arch,
 			data["lastModifiedDateTime"],
 			data["createdDateTime"],
 		)
@@ -262,13 +290,14 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 	} else {
 		// update
 		log.Println("update essay", data["name"])
-		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, uptime=?, addtime=? where essayId=?")
+		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, archive=?, uptime=?, addtime=? where essayId=?")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
 			data["name"],
 			data["size"],
 			f,
 			a[0],
+			sql_arch,
 			data["lastModifiedDateTime"],
 			data["createdDateTime"],
 			data["id"],
