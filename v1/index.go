@@ -16,8 +16,6 @@ import (
 
 func init() {
 	route.Mux.GET("/v1/index", func(rw http.ResponseWriter, r *http.Request) {
-		global.SetHeader(rw)
-
 		global.OpenDB()
 		msg, _ := json.Marshal(global.NewResult(&global.Result{
 			Code: 200,
@@ -28,8 +26,6 @@ func init() {
 	})
 
 	route.Mux.GET("/v1/getip", func(rw http.ResponseWriter, r *http.Request) {
-		global.SetHeader(rw)
-
 		ip := exnet.ClientPublicIP(r)
 		if ip == "" {
 			ip = exnet.ClientIP(r)

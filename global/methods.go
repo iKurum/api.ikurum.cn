@@ -37,6 +37,7 @@ type Essay_list struct {
 	Note    string `json:"note"`
 	Uptime  int64  `json:"upTime"`
 	Addtime int64  `json:"addTime"`
+	Archive string `json:"archive"`
 }
 
 // 文章详情
@@ -89,13 +90,14 @@ func GetByEssay(essayId string) Essay {
 	DB := OpenDB()
 
 	var essay Essay
-	err := DB.QueryRow("select aid,title,content,size,uptime,addtime from essay where aid=?", essayId).Scan(
+	err := DB.QueryRow("select aid,title,content,size,uptime,addtime,archive from essay where aid=?", essayId).Scan(
 		&essay.Id,
 		&essay.Title,
 		&essay.Content,
 		&essay.Size,
 		&essay.Uptime,
 		&essay.Addtime,
+		&essay.Archive,
 	)
 	t := CheckErr(err, "")
 	if t == 1 {
@@ -222,11 +224,4 @@ func SetOne() {
 	if err = sc.Err(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-// 设置 请求头
-func SetHeader(rw http.ResponseWriter) {
-	rw.Header().Add("x-content-type-options", "nosniff")
-	rw.Header().Del("Content-Type")
-	rw.Header().Add("Content-Type", "application/json;utf-8")
 }

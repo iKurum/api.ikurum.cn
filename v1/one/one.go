@@ -13,7 +13,6 @@ import (
 
 func init() {
 	route.Mux.GET("/v1/one", func(rw http.ResponseWriter, r *http.Request) {
-		global.SetHeader(rw)
 		DB := global.OpenDB()
 
 		var count int64

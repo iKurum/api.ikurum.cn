@@ -44,7 +44,9 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
 	res.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
-	res.Header().Set("content-type", "application/json")             //返回数据格式是json
+	res.Header().Add("x-content-type-options", "nosniff")
+	res.Header().Del("Content-Type")
+	res.Header().Add("Content-Type", "application/json;utf-8")
 
 	for _, URLHandlerContorller := range mux {
 		// fmt.Printf("url: %s, req: %s\n", URLHandlerContorller.Pattern, req.URL.Path)
@@ -61,14 +63,14 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 // GET 初始化路由
 func (u URLHandlerContorller) GET(pattern string, f http.HandlerFunc) {
-	fmt.Println("mux pattern:", pattern)
+	fmt.Println("get pattern:", pattern)
 
 	mux = append(mux, URLHandlerContorller{f, "GET", pattern})
 }
 
 // POST 初始化路由
 func (u URLHandlerContorller) POST(pattern string, f http.HandlerFunc) {
-	fmt.Println("mux pattern:", pattern)
+	fmt.Println("post pattern:", pattern)
 
 	mux = append(mux, URLHandlerContorller{f, "POST", pattern})
 }

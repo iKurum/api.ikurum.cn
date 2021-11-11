@@ -10,7 +10,6 @@ import (
 
 func init() {
 	route.Mux.GET("/v1/user/info", func(rw http.ResponseWriter, r *http.Request) {
-		global.SetHeader(rw)
 		DB := global.OpenDB()
 
 		var (

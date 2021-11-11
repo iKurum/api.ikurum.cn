@@ -14,8 +14,6 @@ import (
 
 func init() {
 	route.Mux.POST("/v1/ocr/text", func(rw http.ResponseWriter, r *http.Request) {
-		global.SetHeader(rw)
-
 		r.ParseForm()
 		file, fileHandle, err := r.FormFile("image")
 		if err != nil {
