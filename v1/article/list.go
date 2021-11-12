@@ -58,8 +58,8 @@ func init() {
 
 		var count int64
 		if archive != "" {
-			DB.QueryRow("select count(*) from essay where archive like '%?%'", archive).Scan(&count)
-			fmt.Println("select essay like count", count)
+			DB.QueryRow("select count(*) from essay where archive like ?", "%"+archive+"%").Scan(&count)
+			fmt.Printf("select essay like %s: count %d\n", archive, count)
 		} else {
 			DB.QueryRow("select count(*) from essay").Scan(&count)
 			fmt.Println("select essay count", count)
@@ -83,18 +83,23 @@ func init() {
 		}
 		d := make([]interface{}, csize)
 
-		var result *sql.Rows
+		var (
+			result *sql.Rows
+			stmt   *sql.Stmt
+		)
 		if page > 1 {
-			stmt, err := DB.Prepare("select aid,size,title,addtime,note,archive from essay order by addtime desc limit ?,?")
-			global.CheckErr(err, "")
-			result, err = stmt.Query(csize, (page-1)*size)
-			global.CheckErr(err, "")
+			stmt, err = DB.Prepare("select aid,size,title,addtime,note,archive from essay  where archive like ? order by addtime desc limit ?,?")
 		} else {
-			stmt, err := DB.Prepare("select aid,size,title,addtime,note,archive from essay order by addtime desc limit ?")
-			global.CheckErr(err, "")
-			result, err = stmt.Query(csize)
-			global.CheckErr(err, "")
+			stmt, err = DB.Prepare("select aid,size,title,addtime,note,archive from essay where archive like ? order by addtime desc limit ?")
 		}
+		global.CheckErr(err, "")
+
+		if page > 1 {
+			result, err = stmt.Query("%"+archive+"%", csize, (page-1)*size)
+		} else {
+			result, err = stmt.Query("%"+archive+"%", csize)
+		}
+		global.CheckErr(err, "")
 
 		index := 0
 		for result.Next() {
