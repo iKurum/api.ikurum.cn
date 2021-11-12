@@ -21,12 +21,13 @@ var SetTokenTime int = 1
 
 // 接口返回
 type Result struct {
-	Code int         `json:"code"`
-	Data interface{} `json:"data"`
-	Msg  string      `json:"msg"`
-	More bool        `json:"more"`
-	Page int64       `json:"page"`
-	Size int64       `json:"size"`
+	Code  int         `json:"code"`
+	Data  interface{} `json:"data"`
+	Msg   string      `json:"msg"`
+	More  bool        `json:"more"`
+	Page  int64       `json:"page"`
+	Size  int64       `json:"size"`
+	Count int64       `json:"count"`
 }
 
 // 文章列表

@@ -142,11 +142,12 @@ func init() {
 		}
 
 		msg, _ := json.Marshal(global.NewResult(&global.Result{
-			Code: 200,
-			Data: d,
-			Page: page,
-			Size: size,
-			More: int64(page*size) < count,
+			Code:  200,
+			Data:  d,
+			Page:  page,
+			Size:  size,
+			More:  int64(page*size) < count,
+			Count: csize,
 		}))
 		rw.Write(msg)
 	})
