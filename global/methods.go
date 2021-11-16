@@ -226,3 +226,16 @@ func SetOne() {
 		log.Fatal(err)
 	}
 }
+
+// 数据库初始化 设置百度智能云接口
+func SetBd() {
+	DB := OpenDB()
+	sql := "insert into bdocr(pid,ocrid,title,quantity,url) values(?,?,?,?,?)"
+	stmt, err := DB.Prepare(sql)
+	CheckErr(err, "")
+	defer stmt.Close()
+
+	for i := 0; i < len(config.OCR_URL); i++ {
+		stmt.Exec(config.OCR_URL[i]["pid"], config.OCR_URL[i]["ocrid"], config.OCR_URL[i]["title"], config.OCR_URL[i]["quantity"], config.OCR_URL[i]["url"])
+	}
+}

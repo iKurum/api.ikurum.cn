@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -81,27 +82,19 @@ func init() {
 				csize = count - (page-1)*size
 			}
 		}
-		d := make([]interface{}, csize)
-
+		// d := make([]interface{})
+		var d []interface{}
 		var (
 			result *sql.Rows
 			stmt   *sql.Stmt
 		)
-		if page > 1 {
-			stmt, err = DB.Prepare("select aid,size,title,addtime,note,archive from essay  where archive like ? order by addtime desc limit ?,?")
-		} else {
-			stmt, err = DB.Prepare("select aid,size,title,addtime,note,archive from essay where archive like ? order by addtime desc limit ?")
-		}
+		stmt, err = DB.Prepare("select aid,size,title,addtime,note,archive from essay  where archive like ? order by addtime desc limit ?,?")
 		global.CheckErr(err, "")
 
-		if page > 1 {
-			result, err = stmt.Query("%"+archive+"%", csize, (page-1)*size)
-		} else {
-			result, err = stmt.Query("%"+archive+"%", csize)
-		}
+		result, err = stmt.Query("%"+archive+"%", (page-1)*size, csize)
 		global.CheckErr(err, "")
 
-		index := 0
+		// index := 0
 		for result.Next() {
 			var data global.Essay_list
 			err = result.Scan(
@@ -113,20 +106,17 @@ func init() {
 				&data.Archive,
 			)
 			if err != nil {
+				log.Fatal(err)
 				break
 			}
-			d[index] = map[string]interface{}{
+			d = append(d, map[string]interface{}{
 				"id":      data.Id,
 				"size":    data.Size,
 				"title":   data.Title,
 				"addTime": data.Addtime,
 				"note":    data.Note,
 				"archive": data.Archive,
-			}
-			index++
-			if index >= int(csize) {
-				break
-			}
+			})
 		}
 		result.Close()
 

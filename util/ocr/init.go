@@ -76,27 +76,17 @@ func Read_file(file []byte, t float64) []byte {
 	if err == nil {
 		var s = make([]string, 2)
 		s = strings.Split(fmt.Sprintf("%v", t), ".")
-		var url []map[string]string
-
-		fmt.Println("type:", s[0], s[1])
-		switch s[0] {
-		case "1":
-			url = config.OCR_URL
-		case "2":
-			url = config.FACE_URL
-		case "3":
-			url = config.IMAGE_URL
-		}
+		var url []map[string]interface{} = config.OCR_URL
 
 		for i := 0; i < len(url); i++ {
 			if url[i]["type"] == s[1] {
 				switch s[0] {
 				case "1":
-					rt = getTxt(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], bai.API_URL+url[i]["url"]+"?access_token="+config.Baidu_Access_token)
+					rt = getTxt(base64.StdEncoding.EncodeToString(file), url[i]["name"].(string), url[i]["ocrid"].(string), bai.API_URL+url[i]["url"].(string)+"?access_token="+config.Baidu_Access_token)
 				case "2":
-					rt = getFace(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], bai.API_URL+url[i]["url"]+"?access_token="+config.Baidu_Access_token)
+					rt = getFace(base64.StdEncoding.EncodeToString(file), url[i]["name"].(string), url[i]["ocrid"].(string), bai.API_URL+url[i]["url"].(string)+"?access_token="+config.Baidu_Access_token)
 				case "3":
-					rt = getImg(base64.StdEncoding.EncodeToString(file), url[i]["name"], url[i]["type"], bai.API_URL+url[i]["url"]+"?access_token="+config.Baidu_Access_token)
+					rt = getImg(base64.StdEncoding.EncodeToString(file), url[i]["name"].(string), url[i]["ocrid"].(string), bai.API_URL+url[i]["url"].(string)+"?access_token="+config.Baidu_Access_token)
 				}
 			}
 		}

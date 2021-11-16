@@ -99,6 +99,20 @@ func getAccessToken() {
 	// 更新detail
 	getDetail()
 
+	var one_count int64 = 0
+	DB.QueryRow("select count(*) from one").Scan(&one_count)
+	if one_count < 1 {
+		global.SetOne()
+		log.Println("初始化一言")
+	}
+
+	var bd_count int64 = 0
+	DB.QueryRow("select count(*) from bdocr").Scan(&bd_count)
+	if bd_count < 1 {
+		global.SetBd()
+		log.Println("初始化百度智能云接口")
+	}
+
 	// 更新info
 	jsonTxt := global.GetBody("/", "")
 	var j map[string]interface{}
