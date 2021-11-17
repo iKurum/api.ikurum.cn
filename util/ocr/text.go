@@ -9,16 +9,13 @@ import (
 	"strings"
 )
 
-func getTxt(f string, name string, t string, image_url string) []byte {
+func getTxt(f string, t string, image_url string) (map[string]interface{}, error) {
 	var params = make(url.Values)
 	params.Add("image", f)
-	if t == "2" {
+	if t == "2.1" {
 		params.Add("id_card_side", "back")
 	}
 	post_data := params.Encode()
-
-	// 调用文字识别服务
-	fmt.Println("连接 OCR 服务 ...", name)
 
 	req, _ := http.NewRequest("POST", image_url, strings.NewReader(post_data))
 	req.Header.Set("Content-Type", "application/application/x-www-form-urlencoded")
@@ -29,37 +26,39 @@ func getTxt(f string, name string, t string, image_url string) []byte {
 	}
 	defer resp.Body.Close()
 
-	var j map[string]interface{}
+	var (
+		j    map[string]interface{}
+		data       = make(map[string]interface{})
+		e    error = nil
+	)
 	jsonTxt, _ := ioutil.ReadAll(resp.Body)
 	json.Unmarshal(jsonTxt, &j)
 
-	var txt string = ""
-	for k, v := range j {
-		if k == "words_result" {
-			switch t {
-			case "4":
-			case "2":
-				if j["image_status"] == "normal" {
-					var m = v.(map[string]interface{})
-					for key, value := range m {
-						txt += key + ":" + value.(map[string]interface{})["words"].(string) + "\n"
-					}
-				} else {
-					fmt.Printf("%v\n", j["image_status"])
-				}
-			case "8":
-				var m = v.(map[string]interface{})
-				for key, value := range m {
-					txt += key + ":" + value.(string) + "\n"
-				}
-			default:
-				var m = v.([]interface{})
-				for i := 0; i < len(m); i++ {
-					txt += m[i].(map[string]interface{})["words"].(string)
-				}
-			}
-		}
+	if j["error_code"] != nil {
+		delete(j, "log_id")
+		delete(j, "words_result")
+		delete(j, "words_result_num")
+		e = fmt.Errorf(j["error_message"].(string))
+	}
+	if t == "2.1" && j["image_status"] != "normal" {
+		delete(j, "log_id")
+		delete(j, "words_result")
+		delete(j, "words_result_num")
+		e = fmt.Errorf(j["image_status"].(string))
 	}
 
-	return []byte(txt)
+	if j["words_result"] != nil {
+		data["result"] = j["words_result"]
+		data["resultNum"] = j["words_result_num"]
+		if t == "2.1" {
+			data["type"] = j["idcard_number_type"]
+		}
+	} else if j["result"] != nil {
+		data["result"] = j["result"]
+	}
+
+	if e != nil {
+		return j, e
+	}
+	return data, e
 }

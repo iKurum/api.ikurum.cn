@@ -23,7 +23,7 @@ var SetTokenTime int = 1
 type Result struct {
 	Code  int         `json:"code"`
 	Data  interface{} `json:"data"`
-	Msg   string      `json:"msg"`
+	Msg   interface{} `json:"msg"`
 	More  bool        `json:"more"`
 	Page  int64       `json:"page"`
 	Size  int64       `json:"size"`
