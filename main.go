@@ -9,7 +9,6 @@ import (
 
 func main() {
 	go util.StartToken()
-
 	r := &route.Router{}
 	r.Listen("9091")
 }

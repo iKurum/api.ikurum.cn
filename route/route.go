@@ -1,11 +1,14 @@
 package route
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 )
 
 // Mux 路由表
@@ -31,10 +34,23 @@ func (r *Router) Listen(port string) {
 	}
 	fmt.Printf("启动服务: 127.0.0.1%s\n", port)
 
-	err := http.ListenAndServe(port, r)
-	if err != nil {
-		log.Fatal("ListenAndServe err:", err)
+	server := &http.Server{
+		Addr:    port,
+		Handler: r,
 	}
+	go server.ListenAndServe()
+
+	listenSignal(context.Background(), server)
+}
+
+func listenSignal(ctx context.Context, httpSrv *http.Server) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	<-sigs
+	fmt.Println("notify sigs")
+	httpSrv.Shutdown(ctx)
+	fmt.Println("http shutdown")
 }
 
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {

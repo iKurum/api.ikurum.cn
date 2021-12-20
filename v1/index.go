@@ -6,12 +6,11 @@ import (
 
 	"api.ikurum.cn/global"
 	"api.ikurum.cn/route"
-	"github.com/thinkeridea/go-extend/exnet"
-
 	_ "api.ikurum.cn/v1/article"
 	_ "api.ikurum.cn/v1/ocr"
 	_ "api.ikurum.cn/v1/one"
 	_ "api.ikurum.cn/v1/user"
+	"github.com/thinkeridea/go-extend/exnet"
 )
 
 func init() {
@@ -19,7 +18,7 @@ func init() {
 		global.OpenDB()
 		msg, _ := json.Marshal(global.NewResult(&global.Result{
 			Code: 200,
-			Data: "database connect",
+			Data: "database connected",
 			Msg:  "This is api.ikurum.cn",
 		}))
 		rw.Write(msg)

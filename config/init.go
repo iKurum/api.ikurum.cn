@@ -4,7 +4,7 @@ import "log"
 
 // true		打包后，连接数据库
 // false	本地启项目，连接远端数据库
-var Online = true
+var Online = false
 
 // 数据库连接信息
 var DB = map[string]string{
