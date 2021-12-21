@@ -79,14 +79,14 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 // GET 初始化路由
 func (u URLHandlerContorller) GET(pattern string, f http.HandlerFunc) {
-	fmt.Println("get pattern:", pattern)
+	// fmt.Println("get pattern:", pattern)
 
 	mux = append(mux, URLHandlerContorller{f, "GET", pattern})
 }
 
 // POST 初始化路由
 func (u URLHandlerContorller) POST(pattern string, f http.HandlerFunc) {
-	fmt.Println("post pattern:", pattern)
+	// fmt.Println("post pattern:", pattern)
 
 	mux = append(mux, URLHandlerContorller{f, "POST", pattern})
 }
