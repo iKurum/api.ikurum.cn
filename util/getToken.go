@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"api.ikurum.cn/config"
 	"api.ikurum.cn/global"
 )
 
@@ -65,7 +66,7 @@ func StartToken() {
 	getAccessToken()
 
 	it := &intervalTime{
-		interval: time.Duration(global.SetTokenTime) * time.Hour,
+		interval: config.SetTokenTime,
 		job:      getAccessToken,
 		enabled:  true,
 	}
@@ -226,12 +227,16 @@ func setDetail(ch chan map[string]interface{}) {
 		)
 		global.CheckErr(e, "")
 
-		if da["lastModifiedDateTime"].(int64) != time_last ||
-			da["createdDateTime"].(int64) != time_create {
+		if da["lastModifiedDateTime"].(int64) != time_last {
+			e = fmt.Errorf("essay detail has change")
+		}
+
+		if da["createdDateTime"].(int64) != time_create {
 			e = fmt.Errorf("essay detail has new")
 		}
 	}
 
+	// log.Println(e)
 	if e != nil {
 		// 创建或更新essay detail
 		if md := getMD(da["@microsoft.graph.downloadUrl"].(string), da["id"].(string)); md {

@@ -16,9 +16,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// token刷新时间  \小时
-var SetTokenTime int = 1
-
 // 接口返回
 type Result struct {
 	Code  int         `json:"code"`
