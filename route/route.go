@@ -34,7 +34,7 @@ func (r *Router) Listen(port string) {
 	if b := strings.HasPrefix(port, ":"); !b {
 		port = ":" + port
 	}
-	logs.Warning("init mysql ip", config.DB["ip"])
+	logs.Warning("init mysql ip: ", config.DB["ip"])
 	logs.Info("启动服务: http://127.0.0.1", port)
 
 	server := &http.Server{
