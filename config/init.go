@@ -6,7 +6,7 @@ import (
 
 // true		打包后，连接数据库
 // false	本地启项目，连接远端数据库
-var Online = true
+var Online = false
 
 // token刷新时间
 var SetTokenTime time.Duration = time.Duration(1) * time.Hour
