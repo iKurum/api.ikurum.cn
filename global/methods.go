@@ -156,7 +156,7 @@ func GetBody(url string, t string) []byte {
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
 		CheckErr(err, "rows failed")
-		logs.Info("update user photo uscc: ", row)
+		logs.Info("update user photo succ: ", row)
 	}
 
 	return jsonTxt

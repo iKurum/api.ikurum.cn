@@ -181,34 +181,35 @@ func getDetail() {
 	logs.Warning("开始检查文章更新 ...")
 	jsonTxt = global.GetBody("/drive/root:/article:/children?$top=100000", "")
 
-	ch := make(chan map[string]interface{}, 1)
-
 	var j map[string]interface{}
 	json.Unmarshal(jsonTxt, &j)
-	logs.Info("获取列表")
+	logs.Info("获取列表 succ")
+
+	var data []interface{}
 	for n, v := range j {
 		if n == "value" {
-			// 开始文章更新
-			data := v.([]interface{})
-			logs.Info("解析数据")
+			data = v.([]interface{})
+			logs.Info("解析数据:", "\n")
+		}
+	}
 
-			for i := 0; i < len(data); i++ {
-				da := data[i].(map[string]interface{})
+	ch := make(chan map[string]interface{}, 1)
+	for i := 0; i < len(data); i++ {
+		da := data[i].(map[string]interface{})
 
-				for name := range da {
-					if name == "@microsoft.graph.downloadUrl" {
-						logs.Info("检查文章状态 ", da["name"])
-						reg := regexp.MustCompile(`[A-Za-z]`)
-						l := strings.TrimSpace(reg.ReplaceAllString(da["lastModifiedDateTime"].(string), " "))
-						c := strings.TrimSpace(reg.ReplaceAllString(da["createdDateTime"].(string), " "))
-						time_last, _ := time.ParseInLocation("2006-01-02 15:04:05", l, time.Local)
-						time_create, _ := time.ParseInLocation("2006-01-02 15:04:05", c, time.Local)
-						da["lastModifiedDateTime"] = time_last.Unix() * 1000
-						da["createdDateTime"] = time_create.Unix() * 1000
-						ch <- da
-						setDetail(ch)
-					}
-				}
+		for name := range da {
+			if name == "@microsoft.graph.downloadUrl" {
+				logs.Info(da["name"])
+				logs.Info("检查文章状态:")
+				reg := regexp.MustCompile(`[A-Za-z]`)
+				l := strings.TrimSpace(reg.ReplaceAllString(da["lastModifiedDateTime"].(string), " "))
+				c := strings.TrimSpace(reg.ReplaceAllString(da["createdDateTime"].(string), " "))
+				time_last, _ := time.ParseInLocation("2006-01-02 15:04:05", l, time.Local)
+				time_create, _ := time.ParseInLocation("2006-01-02 15:04:05", c, time.Local)
+				da["lastModifiedDateTime"] = time_last.Unix() * 1000
+				da["createdDateTime"] = time_create.Unix() * 1000
+				ch <- da
+				setDetail(ch)
 			}
 		}
 	}
@@ -285,7 +286,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 
 	if e == sql.ErrNoRows {
 		// insert
-		logs.Warning("insert essay ", data["name"])
+		logs.Warning("insert essay")
 		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, archive, uptime, addtime)values(?,?,?,?,?,?,?)")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
@@ -303,11 +304,11 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
 		global.CheckErr(err, "insert rows failed")
-		logs.Info("insert essay succ:", row, data["name"])
+		logs.Info("insert essay succ:", row)
 	} else {
 		// update
 		if e != nil {
-			logs.Warning("update essay ", data["name"])
+			logs.Warning("update essay")
 		}
 		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, archive=?, uptime=?, addtime=? where essayId=?")
 		global.CheckErr(err, "")
@@ -327,9 +328,12 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 		row, err := res.RowsAffected()
 		global.CheckErr(err, "update rows failed")
 		if row != 0 {
-			logs.Info("update essay succ: ", row, " ", data["name"])
+			logs.Info("update essay succ: ", row)
+		} else {
+			logs.Info("无修改")
 		}
 	}
+	fmt.Println("")
 }
 
 // 获取文章详情

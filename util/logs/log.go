@@ -1,10 +1,25 @@
+// Package logs 调用打印消息
 package logs
 
 import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
+
+// logs 初始化 传入SetPrefix值
+//
+// 默认 [IKURUM]~
+func Init(title ...string) {
+	s := strings.Join(title, "")
+	if s == "" {
+		s = "[IKURUM]~"
+	}
+	log.SetPrefix(s)
+	log.SetFlags(2)
+	log.SetOutput(os.Stdout)
+}
 
 func Info(v ...interface{}) {
 	log.Printf("\033[1;30;42m%v\033[0m %s\n", " INF: ", fmt.Sprint(v...))
