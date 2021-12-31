@@ -2,13 +2,15 @@ package route
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"strings"
 	"syscall"
+
+	"api.ikurum.cn/config"
+	"api.ikurum.cn/util/logs"
 )
 
 // Mux 路由表
@@ -32,7 +34,8 @@ func (r *Router) Listen(port string) {
 	if b := strings.HasPrefix(port, ":"); !b {
 		port = ":" + port
 	}
-	fmt.Printf("启动服务: 127.0.0.1%s\n", port)
+	logs.Warning("init mysql ip", config.DB["ip"])
+	logs.Info("启动服务: http://127.0.0.1", port)
 
 	server := &http.Server{
 		Addr:    port,
@@ -48,14 +51,14 @@ func listenSignal(ctx context.Context, httpSrv *http.Server) {
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	<-sigs
-	fmt.Println("notify sigs")
+	logs.Warning("notify sigs")
 	httpSrv.Shutdown(ctx)
-	fmt.Println("http shutdown")
+	logs.Warning("http shutdown")
 }
 
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/favicon.ico" {
-		fmt.Println("URL Path:", req.URL.Path)
+		logs.Info("URL Path:", req.URL.Path)
 	}
 
 	res.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
@@ -65,7 +68,6 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Content-Type", "application/json;utf-8")
 
 	for _, URLHandlerContorller := range mux {
-		// fmt.Printf("url: %s, req: %s\n", URLHandlerContorller.Pattern, req.URL.Path)
 		if m, _ := regexp.MatchString(URLHandlerContorller.Pattern, req.URL.Path); m {
 			if req.Method == URLHandlerContorller.Method {
 				URLHandlerContorller.Func(res, req)
@@ -79,14 +81,10 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 // GET 初始化路由
 func (u URLHandlerContorller) GET(pattern string, f http.HandlerFunc) {
-	// fmt.Println("get pattern:", pattern)
-
 	mux = append(mux, URLHandlerContorller{f, "GET", pattern})
 }
 
 // POST 初始化路由
 func (u URLHandlerContorller) POST(pattern string, f http.HandlerFunc) {
-	// fmt.Println("post pattern:", pattern)
-
 	mux = append(mux, URLHandlerContorller{f, "POST", pattern})
 }

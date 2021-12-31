@@ -3,9 +3,7 @@ package global
 import (
 	"bufio"
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -13,6 +11,7 @@ import (
 	"database/sql"
 
 	"api.ikurum.cn/config"
+	"api.ikurum.cn/util/logs"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -157,7 +156,7 @@ func GetBody(url string, t string) []byte {
 		//查询影响的行数，判断修改插入成功
 		_, err = res.RowsAffected()
 		CheckErr(err, "rows failed")
-		fmt.Println("更新头像完成")
+		logs.Info("更新头像完成")
 	}
 
 	return jsonTxt
@@ -169,7 +168,7 @@ func CheckErr(err error, str string) int {
 		if err == sql.ErrNoRows {
 			return 1
 		} else {
-			log.Fatalln(str, err)
+			logs.Exit(str, err)
 		}
 	}
 
@@ -197,7 +196,7 @@ func NewResult(res *Result) *Result {
 func SetOne() {
 	fin, err := os.OpenFile("./one", os.O_RDONLY, 0)
 	if err != nil {
-		log.Fatal(err)
+		logs.Exit(err)
 	}
 	defer fin.Close()
 
@@ -214,7 +213,7 @@ func SetOne() {
 	}
 
 	if err = sc.Err(); err != nil {
-		log.Fatal(err)
+		logs.Exit(err)
 	}
 }
 

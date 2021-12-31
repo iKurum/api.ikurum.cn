@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +16,7 @@ import (
 
 	"api.ikurum.cn/config"
 	"api.ikurum.cn/global"
+	"api.ikurum.cn/util/logs"
 )
 
 type intervalTime struct {
@@ -58,9 +58,9 @@ func StartToken() {
 	err := DB.QueryRow("select CLIENT_ID,CLIENT_SECRET from global where gid=1").Scan(&row.CLIENT_ID, &row.CLIENT_SECRET)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Println("There is not row")
+			logs.Info("There is not row")
 		} else {
-			log.Fatalln(err)
+			logs.Exit(err)
 		}
 	}
 	getAccessToken()
@@ -92,26 +92,23 @@ func getAccessToken() {
 	//查询影响的行数，判断修改插入成功
 	row, err := res.RowsAffected()
 	global.CheckErr(err, "rows failed")
-	fmt.Println("update refresh succ:", row)
+	logs.Info("update refresh succ: ", row)
 
 	// 更新photo
 	global.GetBody("/photos/120x120/$value", "img")
-
-	// 更新detail
-	getDetail()
 
 	var one_count int64 = 0
 	DB.QueryRow("select count(*) from one").Scan(&one_count)
 	if one_count < 1 {
 		global.SetOne()
-		log.Println("初始化一言")
+		logs.Info("初始化一言")
 	}
 
 	var bd_count int64 = 0
 	DB.QueryRow("select count(*) from bdocr").Scan(&bd_count)
 	if bd_count < 1 {
 		global.SetBd()
-		log.Println("初始化百度智能云接口")
+		logs.Info("初始化百度智能云接口")
 	}
 
 	// 更新info
@@ -130,7 +127,7 @@ func getAccessToken() {
 			//查询影响的行数，判断修改插入成功
 			row, err := res.RowsAffected()
 			global.CheckErr(err, "rows failed")
-			fmt.Println("update user email succ:", row)
+			logs.Info("update user email succ: ", row)
 		}
 		if name == "surname" {
 			sql, err := DB.Prepare("UPDATE user SET name=? WHERE uid=1")
@@ -141,9 +138,12 @@ func getAccessToken() {
 			//查询影响的行数，判断修改插入成功
 			row, err := res.RowsAffected()
 			global.CheckErr(err, "rows failed")
-			fmt.Println("update user name succ:", row)
+			logs.Info("update user name succ: ", row)
 		}
 	}
+
+	// 更新detail
+	getDetail()
 }
 
 // 刷新token
@@ -178,7 +178,7 @@ func getToken() (string, string) {
 func getDetail() {
 	var jsonTxt []byte
 
-	fmt.Println("开始检查文章更新 ...")
+	logs.Warning("开始检查文章更新 ...")
 	jsonTxt = global.GetBody("/drive/root:/article:/children?$top=100000", "")
 
 	ch := make(chan map[string]interface{}, 6)
@@ -188,6 +188,7 @@ func getDetail() {
 
 	for n, v := range j {
 		if n == "value" {
+			// 开始文章更新
 			data := v.([]interface{})
 			for i := 0; i < len(data); i++ {
 				da := data[i].(map[string]interface{})
@@ -207,7 +208,6 @@ func getDetail() {
 			}
 		}
 	}
-	log.Println("文章更新完成")
 }
 
 // 检查文章状态
@@ -221,6 +221,7 @@ func setDetail(ch chan map[string]interface{}) {
 			time_create int64
 			time_last   int64
 		)
+		// 获取数据库 文章更新时间
 		e = DB.QueryRow("select uptime, addtime from essay where essayId=?", da["id"].(string)).Scan(
 			&time_last,
 			&time_create,
@@ -230,24 +231,19 @@ func setDetail(ch chan map[string]interface{}) {
 		if da["lastModifiedDateTime"].(int64) != time_last {
 			e = fmt.Errorf("essay detail has change")
 		}
-
-		if da["createdDateTime"].(int64) != time_create {
-			e = fmt.Errorf("essay detail has new")
-		}
 	}
 
-	// log.Println(e)
-	if e != nil {
-		// 创建或更新essay detail
-		if md := getMD(da["@microsoft.graph.downloadUrl"].(string), da["id"].(string)); md {
-			f, err := ioutil.ReadFile("md/" + da["id"].(string) + ".md")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			toSetDetail(e, string(f), da)
+	// if e != nil {
+	// 创建或更新essay detail
+	if md := getMD(da["@microsoft.graph.downloadUrl"].(string), da["id"].(string)); md {
+		f, err := ioutil.ReadFile("md/" + da["id"].(string) + ".md")
+		if err != nil {
+			logs.Exit(err)
 		}
+
+		toSetDetail(e, string(f), da)
 	}
+	// }
 }
 
 // 存储文章详情
@@ -287,7 +283,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 
 	if e == sql.ErrNoRows {
 		// insert
-		log.Println("insert essay", data["name"])
+		logs.Warning("insert essay ", data["name"])
 		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, archive, uptime, addtime)values(?,?,?,?,?,?,?)")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
@@ -305,10 +301,12 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
 		global.CheckErr(err, "insert rows failed")
-		fmt.Println("insert essay succ:", row, data["name"])
+		logs.Info("insert essay succ:", row, data["name"])
 	} else {
 		// update
-		log.Println("update essay", data["name"])
+		if e != nil {
+			logs.Warning("update essay ", data["name"])
+		}
 		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, archive=?, uptime=?, addtime=? where essayId=?")
 		global.CheckErr(err, "")
 		res, err := sql.Exec(
@@ -326,7 +324,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 		//查询影响的行数，判断修改插入成功
 		row, err := res.RowsAffected()
 		global.CheckErr(err, "update rows failed")
-		fmt.Println("update essay succ:", row, data["name"])
+		logs.Info("update essay succ: ", row, " ", data["name"])
 	}
 }
 
