@@ -17,7 +17,7 @@ func init() {
 			email string
 		)
 		err := DB.QueryRow("select name, email from user where uid=1").Scan(&name, &email)
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 
 		msg, _ := json.Marshal(global.NewResult(&global.Result{
 			Code: 200,

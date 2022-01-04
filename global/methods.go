@@ -3,6 +3,7 @@ package global
 import (
 	"bufio"
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -13,6 +14,10 @@ import (
 	"api.ikurum.cn/config"
 	"api.ikurum.cn/util/logs"
 	_ "github.com/go-sql-driver/mysql"
+)
+
+var (
+	NoRows = sql.ErrNoRows
 )
 
 // 接口返回
@@ -69,11 +74,7 @@ func HasEssay(essayId string) error {
 
 	var time int
 	err := DB.QueryRow("select uptime from essay where essayId=?", essayId).Scan(&time)
-	t := CheckErr(err, "")
-	if t == 1 {
-		return err
-	}
-	return nil
+	return CheckErr(err)
 }
 
 // 获取essay详情
@@ -90,8 +91,8 @@ func GetByEssay(essayId string) Essay {
 		&essay.Addtime,
 		&essay.Archive,
 	)
-	t := CheckErr(err, "")
-	if t == 1 {
+
+	if t := CheckErr(err); t == NoRows {
 		essay.Err = "参数id错误"
 	}
 
@@ -100,14 +101,14 @@ func GetByEssay(essayId string) Essay {
 		&essay.Previous,
 		&essay.Previoustitle,
 	)
-	CheckErr(err, "")
+	CheckErr(err)
 
 	//获取下一条 id
 	err = DB.QueryRow("select aid,title from essay where addtime>? order by addtime asc", essay.Addtime).Scan(
 		&essay.Next,
 		&essay.Nexttitle,
 	)
-	CheckErr(err, "")
+	CheckErr(err)
 
 	return essay
 }
@@ -121,10 +122,10 @@ func GetBody(url string, t string) []byte {
 
 	DB := OpenDB()
 	err := DB.QueryRow("select access from user where uid=1").Scan(&access)
-	CheckErr(err, "")
+	CheckErr(err)
 
 	err = DB.QueryRow("select BASE_URL from global where gid=1").Scan(&baseURL)
-	CheckErr(err, "")
+	CheckErr(err)
 	// baseURL := GetByDB("global", "baseURL")
 	// accessToken := GetByDB("global", "accessToken")
 
@@ -148,7 +149,7 @@ func GetBody(url string, t string) []byte {
 
 	if t == "img" {
 		sql, err := DB.Prepare("update user set photo=? where uid=1")
-		CheckErr(err, "")
+		CheckErr(err)
 
 		res, err := sql.Exec(base64.StdEncoding.EncodeToString(jsonTxt))
 		CheckErr(err, "exec failed")
@@ -163,16 +164,12 @@ func GetBody(url string, t string) []byte {
 }
 
 // err 检查
-func CheckErr(err error, str string) int {
+func CheckErr(err error, str ...string) error {
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return 1
-		} else {
-			logs.Exit(str, err)
-		}
+		logs.Warning(fmt.Sprint(str), err)
 	}
 
-	return 0
+	return err
 }
 
 // 返回格式
@@ -203,7 +200,7 @@ func SetOne() {
 	DB := OpenDB()
 	sql := "insert into one(md) values(?)"
 	stmt, err := DB.Prepare(sql)
-	CheckErr(err, "")
+	CheckErr(err)
 	defer stmt.Close()
 
 	sc := bufio.NewScanner(fin)
@@ -222,7 +219,7 @@ func SetBd() {
 	DB := OpenDB()
 	sql := "insert into bdocr(pid,ocrid,title,quantity,url) values(?,?,?,?,?)"
 	stmt, err := DB.Prepare(sql)
-	CheckErr(err, "")
+	CheckErr(err)
 	defer stmt.Close()
 
 	for i := 0; i < len(config.OCR_URL); i++ {

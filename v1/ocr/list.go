@@ -37,7 +37,7 @@ func init() {
 		DB.QueryRow("select count(*) from bdocr").Scan(&count)
 
 		result, err := DB.Query("select pid+0,pid,ocrid,title,quantity from bdocr order by pid")
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 
 		data := make(map[string][]interface{})
 		for result.Next() {

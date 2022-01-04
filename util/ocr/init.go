@@ -34,7 +34,7 @@ func fetch_token() error {
 		&bai.TOKEN_URL,
 		&bai.API_URL,
 	)
-	global.CheckErr(err, "")
+	global.CheckErr(err)
 
 	var params = make(url.Values)
 	params.Add("grant_type", "client_credentials")
@@ -72,14 +72,14 @@ func Read_file(file []byte, first int, second int) (interface{}, error) {
 	DB := global.OpenDB()
 	var url string
 	err := DB.QueryRow("select url from bdocr where pid=? and ocrid=?", first, second).Scan(&url)
-	t := global.CheckErr(err, "")
-	if t == 1 {
+	t := global.CheckErr(err)
+	if t == global.NoRows {
 		return "", fmt.Errorf("类别错误")
 	}
 
 	var quantity int64 = 0
 	err = DB.QueryRow("select quantity from bdocr where pid=? and ocrid=?", first, second).Scan(&quantity)
-	global.CheckErr(err, "")
+	global.CheckErr(err)
 	if quantity <= 0 {
 		return "", fmt.Errorf("今日次数已耗尽")
 	}
@@ -88,7 +88,7 @@ func Read_file(file []byte, first int, second int) (interface{}, error) {
 		rt, e := getTxt(base64.StdEncoding.EncodeToString(file), fmt.Sprint(first, ".", second), bai.API_URL+url+"?access_token="+config.Baidu_Access_token)
 
 		sql, err := DB.Prepare("UPDATE bdocr SET quantity=? WHERE pid=? and ocrid=?")
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 		res, err := sql.Exec(quantity-1, first, second)
 		global.CheckErr(err, "exec failed")
 

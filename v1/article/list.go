@@ -89,10 +89,10 @@ func init() {
 			stmt   *sql.Stmt
 		)
 		stmt, err = DB.Prepare("select aid,size,title,addtime,note,archive from essay  where archive like ? order by addtime desc limit ?,?")
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 
 		result, err = stmt.Query("%"+archive+"%", (page-1)*size, csize)
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 
 		// index := 0
 		for result.Next() {

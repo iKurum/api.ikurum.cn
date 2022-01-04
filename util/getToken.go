@@ -51,7 +51,7 @@ type globalConfig struct {
 
 var row globalConfig
 
-// 初始化token，设置定时任务
+// 初始化 设置定时任务
 func StartToken() {
 	DB := global.OpenDB()
 
@@ -75,17 +75,19 @@ func StartToken() {
 	it.wg.Wait()
 }
 
+// 定时刷新token
 func getAccessToken() {
 	DB := global.OpenDB()
 
 	err := DB.QueryRow("select refresh from user where uid=1").Scan(&row.refresh)
-	global.CheckErr(err, "")
+	global.CheckErr(err)
 
+	// 返回新 token
 	accessToken, refreshToken := getToken()
 
 	// 执行SQL语句
 	sql, err := DB.Prepare("UPDATE user SET access=?, refresh=?, uptime=? WHERE uid=1")
-	global.CheckErr(err, "")
+	global.CheckErr(err)
 	res, err := sql.Exec(accessToken, refreshToken, time.Now().Unix()*1000)
 	global.CheckErr(err, "exec failed")
 
@@ -94,6 +96,11 @@ func getAccessToken() {
 	global.CheckErr(err, "rows failed")
 	logs.Info("update refresh succ: ", row)
 
+	updateDB(DB)
+}
+
+//更新DB数据
+func updateDB(DB *sql.DB) {
 	// 更新photo
 	global.GetBody("/photos/120x120/$value", "img")
 
@@ -120,7 +127,7 @@ func getAccessToken() {
 		// 执行SQL语句
 		if name == "mail" {
 			sql, err := DB.Prepare("UPDATE user SET email=? WHERE uid=1")
-			global.CheckErr(err, "")
+			global.CheckErr(err)
 			res, err := sql.Exec(value.(string))
 			global.CheckErr(err, "exec failed")
 
@@ -131,7 +138,7 @@ func getAccessToken() {
 		}
 		if name == "surname" {
 			sql, err := DB.Prepare("UPDATE user SET name=? WHERE uid=1")
-			global.CheckErr(err, "")
+			global.CheckErr(err)
 			res, err := sql.Exec(value.(string))
 			global.CheckErr(err, "exec failed")
 
@@ -143,10 +150,10 @@ func getAccessToken() {
 	}
 
 	// 更新detail
-	getDetail()
+	getDetail(DB)
 }
 
-// 刷新token
+// 获取最新token
 func getToken() (string, string) {
 	urlStr := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 	data := url.Values{
@@ -175,9 +182,10 @@ func getToken() (string, string) {
 }
 
 // 更新文章
-func getDetail() {
+func getDetail(DB *sql.DB) {
 	var jsonTxt []byte
 
+	fmt.Println("\033[H\033[2J")
 	logs.Warning("开始检查文章更新 ...")
 	jsonTxt = global.GetBody("/drive/root:/article:/children?$top=100000", "")
 
@@ -200,7 +208,6 @@ func getDetail() {
 		for name := range da {
 			if name == "@microsoft.graph.downloadUrl" {
 				logs.Info(da["name"])
-				logs.Info("检查文章状态:")
 				reg := regexp.MustCompile(`[A-Za-z]`)
 				l := strings.TrimSpace(reg.ReplaceAllString(da["lastModifiedDateTime"].(string), " "))
 				c := strings.TrimSpace(reg.ReplaceAllString(da["createdDateTime"].(string), " "))
@@ -209,49 +216,59 @@ func getDetail() {
 				da["lastModifiedDateTime"] = time_last.Unix() * 1000
 				da["createdDateTime"] = time_create.Unix() * 1000
 				ch <- da
-				setDetail(ch)
+				setDetail(DB, ch)
 			}
 		}
 	}
 }
 
 // 检查文章状态
-func setDetail(ch chan map[string]interface{}) {
-	DB := global.OpenDB()
+func setDetail(DB *sql.DB, ch chan map[string]interface{}) {
+	logs.Info("检查文章状态:")
+
 	da := <-ch
 
-	var e error = nil
+	var (
+		time_create int64
+		time_last   int64
+		e           error = nil
+	)
 	if e = global.HasEssay(da["id"].(string)); e == nil {
-		var (
-			time_create int64
-			time_last   int64
-		)
 		// 获取数据库 文章更新时间
 		e = DB.QueryRow("select uptime, addtime from essay where essayId=?", da["id"].(string)).Scan(
 			&time_last,
 			&time_create,
 		)
-		global.CheckErr(e, "")
 
-		if da["lastModifiedDateTime"].(int64) != time_last {
-			e = fmt.Errorf("essay detail has change")
+		if e = global.CheckErr(e); e == nil {
+			logs.Info(
+				"上次更新时间 ",
+				time.Unix(time_last/1000, 0).Format("2006-01-02 15:04:05"),
+			)
 		}
+		logs.Info(
+			"本次更新时间 ",
+			time.Unix(da["lastModifiedDateTime"].(int64)/1000, 0).Format("2006-01-02 15:04:05"),
+			" ",
+		)
 	}
 
-	// 创建或更新essay detail
+	// 创建或更新essay detail  md文件
 	if md := getMD(da["@microsoft.graph.downloadUrl"].(string), da["id"].(string)); md {
 		f, err := ioutil.ReadFile("md/" + da["id"].(string) + ".md")
 		if err != nil {
 			logs.Exit(err)
 		}
 
-		toSetDetail(e, string(f), da)
+		if e == nil && da["lastModifiedDateTime"].(int64) != time_last {
+			e = fmt.Errorf("有更新，准备更新")
+		}
+		toSetDetail(DB, e, string(f), da)
 	}
 }
 
 // 存储文章详情
-func toSetDetail(e error, f string, data map[string]interface{}) {
-	DB := global.OpenDB()
+func toSetDetail(DB *sql.DB, e error, f string, data map[string]interface{}) {
 	reg := regexp.MustCompile(`^<!-- config {[\s\S]*} -->`)
 	resf := reg.FindAllStringSubmatch(f, -1)
 
@@ -284,11 +301,12 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 
 	data["name"] = strings.Split(data["name"].(string), ".md")[0]
 
+	logs.Info("sql db has error: ", e)
 	if e == sql.ErrNoRows {
 		// insert
 		logs.Warning("insert essay")
 		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, archive, uptime, addtime)values(?,?,?,?,?,?,?)")
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 		res, err := sql.Exec(
 			data["id"],
 			data["name"],
@@ -311,7 +329,7 @@ func toSetDetail(e error, f string, data map[string]interface{}) {
 			logs.Warning("update essay")
 		}
 		sql, err := DB.Prepare("update essay set title=?, size=?, content=?, note=?, archive=?, uptime=?, addtime=? where essayId=?")
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 		res, err := sql.Exec(
 			data["name"],
 			data["size"],
@@ -341,13 +359,13 @@ func getMD(url string, id string) bool {
 	req, _ := http.NewRequest("GET", url, nil)
 
 	resp, err := (&http.Client{}).Do(req)
-	if err != nil {
+	if err = global.CheckErr(err); err != nil {
 		return false
 	}
 	defer resp.Body.Close()
 
 	f, err := os.Create("md/" + id + ".md")
-	if err != nil {
+	if err = global.CheckErr(err); err != nil {
 		return false
 	}
 	io.Copy(f, resp.Body)

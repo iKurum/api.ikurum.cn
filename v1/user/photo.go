@@ -14,7 +14,7 @@ func init() {
 
 		var photo string
 		err := DB.QueryRow("select photo from user where uid=1").Scan(&photo)
-		global.CheckErr(err, "")
+		global.CheckErr(err)
 
 		msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: photo}))
 		rw.Write(msg)
