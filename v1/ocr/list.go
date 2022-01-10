@@ -20,7 +20,7 @@ type bdocr struct {
 }
 
 func init() {
-	route.Mux.GET("/v1/ocr/list", func(rw http.ResponseWriter, r *http.Request) {
+	route.GET("/v1/ocr/list", func(rw http.ResponseWriter, r *http.Request) {
 		DB := global.OpenDB()
 
 		defer func() {

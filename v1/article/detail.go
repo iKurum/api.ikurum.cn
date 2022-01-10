@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	route.Mux.POST("/v1/article/detail", func(rw http.ResponseWriter, r *http.Request) {
+	route.POST("/v1/article/detail", func(rw http.ResponseWriter, r *http.Request) {
 		// 根据请求body创建一个json解析器实例
 		decoder := json.NewDecoder(r.Body)
 

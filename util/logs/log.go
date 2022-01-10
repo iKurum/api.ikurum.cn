@@ -19,7 +19,7 @@ func Init(title ...string) {
 	log.SetPrefix(s)
 	log.SetFlags(2)
 	log.SetOutput(os.Stdout)
-	fmt.Println("\033[H\033[2J")
+	// fmt.Println("\033[H\033[2J")
 }
 
 func Info(v ...interface{}) {

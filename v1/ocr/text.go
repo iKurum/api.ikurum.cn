@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	route.Mux.POST("/v1/ocr/text", func(rw http.ResponseWriter, r *http.Request) {
+	route.POST("/v1/ocr/text", func(rw http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				msg, _ := json.Marshal(global.NewResult(&global.Result{

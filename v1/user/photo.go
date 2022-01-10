@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	route.Mux.GET("/v1/user/photo", func(rw http.ResponseWriter, r *http.Request) {
+	route.GET("/v1/user/photo", func(rw http.ResponseWriter, r *http.Request) {
 		DB := global.OpenDB()
 
 		var photo string

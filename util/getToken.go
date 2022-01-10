@@ -185,7 +185,7 @@ func getToken() (string, string) {
 func getDetail(DB *sql.DB) {
 	var jsonTxt []byte
 
-	fmt.Println("\033[H\033[2J")
+	// fmt.Println("\033[H\033[2J")
 	logs.Warning("开始检查文章更新 ...")
 	jsonTxt = global.GetBody("/drive/root:/article:/children?$top=100000", "")
 

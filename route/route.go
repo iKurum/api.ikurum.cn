@@ -10,11 +10,14 @@ import (
 	"syscall"
 
 	"api.ikurum.cn/config"
+	"api.ikurum.cn/util"
 	"api.ikurum.cn/util/logs"
 )
 
-// Mux 路由表
-var Mux URLHandlerContorller
+var (
+	r_Mux URLHandlerContorller   // Mux 路由表
+	mux   []URLHandlerContorller // 路由对象
+)
 
 // Router 路由接口，实现ServeHTTP
 type Router struct{}
@@ -26,11 +29,11 @@ type URLHandlerContorller struct {
 	Pattern string
 }
 
-// 路由对象
-var mux []URLHandlerContorller
-
 // Listen 监听端口
 func (r *Router) Listen(port string) {
+	logs.Init()
+	go util.StartToken()
+
 	if b := strings.HasPrefix(port, ":"); !b {
 		port = ":" + port
 	}
@@ -79,12 +82,22 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte("404"))
 }
 
+func GET(pattern string, f http.HandlerFunc) {
+	r_Mux.GET(pattern, f)
+}
+
+func POST(pattern string, f http.HandlerFunc) {
+	r_Mux.GET(pattern, f)
+}
+
 // GET 初始化路由
 func (u URLHandlerContorller) GET(pattern string, f http.HandlerFunc) {
+	println("GET 初始化路由: ", pattern)
 	mux = append(mux, URLHandlerContorller{f, "GET", pattern})
 }
 
 // POST 初始化路由
 func (u URLHandlerContorller) POST(pattern string, f http.HandlerFunc) {
+	println("POST 初始化路由: ", pattern)
 	mux = append(mux, URLHandlerContorller{f, "POST", pattern})
 }
