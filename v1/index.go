@@ -6,6 +6,7 @@ import (
 
 	"api.ikurum.cn/global"
 	"api.ikurum.cn/route"
+	"api.ikurum.cn/util/logs"
 
 	_ "api.ikurum.cn/v1/article"
 	_ "api.ikurum.cn/v1/ocr"
@@ -34,4 +35,6 @@ func init() {
 		msg, _ := json.Marshal(global.NewResult(&global.Result{Code: 200, Data: ip}))
 		rw.Write(msg)
 	})
+
+	logs.Info("初始化路由")
 }

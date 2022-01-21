@@ -1,0 +1,24 @@
+# 是否线上
+# true  时，数据库地址使用本地地址 (172.17.0.1 docker连接宿主机)
+# false 时，数据库地址使用线上地址
+online: false
+
+# 刷新token间隔
+# 形式：数字间隔_单位
+# 单位支持 d - 天，h - 小时，m - 分钟
+tokenTime: 1_d
+
+# 数据库设置
+db:
+    # 使用的数据库
+  title: mysql
+    # 数据库线上地址
+  ip: 
+    # 登录用户名
+  user: 
+    # 登录密码
+  pw: 
+    # 登录端口
+  port: 
+    # 数据库名
+  database: 

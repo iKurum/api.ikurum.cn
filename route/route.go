@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"api.ikurum.cn/config"
 	"api.ikurum.cn/util"
 	"api.ikurum.cn/util/logs"
 )
@@ -31,13 +30,11 @@ type URLHandlerContorller struct {
 
 // Listen 监听端口
 func (r *Router) Listen(port string) {
-	logs.Init()
 	go util.StartToken()
 
 	if b := strings.HasPrefix(port, ":"); !b {
 		port = ":" + port
 	}
-	logs.Warning("init mysql ip: ", config.DB["ip"])
 	logs.Info("启动服务: http://127.0.0.1", port)
 
 	server := &http.Server{
@@ -92,12 +89,12 @@ func POST(pattern string, f http.HandlerFunc) {
 
 // GET 初始化路由
 func (u URLHandlerContorller) GET(pattern string, f http.HandlerFunc) {
-	println("GET 初始化路由: ", pattern)
+	// println("GET 初始化路由: ", pattern)
 	mux = append(mux, URLHandlerContorller{f, "GET", pattern})
 }
 
 // POST 初始化路由
 func (u URLHandlerContorller) POST(pattern string, f http.HandlerFunc) {
-	println("POST 初始化路由: ", pattern)
+	// println("POST 初始化路由: ", pattern)
 	mux = append(mux, URLHandlerContorller{f, "POST", pattern})
 }

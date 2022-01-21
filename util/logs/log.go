@@ -20,6 +20,7 @@ func Init(title ...string) {
 	log.SetFlags(2)
 	log.SetOutput(os.Stdout)
 	// fmt.Println("\033[H\033[2J")
+	Info("初始化log")
 }
 
 func Info(v ...interface{}) {
