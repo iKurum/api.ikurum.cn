@@ -1,21 +1,18 @@
-FROM golang:alpine
+FROM --platform=$TARGETPLATFORM golang:alpine
 
-WORKDIR /app
-COPY . ./
+WORKDIR $GOPATH/src/api.ikurum.cn
+COPY . .
 
-ENV GOOS=linux \
+ENV GOARCH=arm64 \
+    GOOS=linux \
     GO111MODULE=on \
-    GOARCH=amd64 \
-    CGO_ENABLED=0 \
-    GOPROXY=https://goproxy.io,direct
-RUN go build -o api.ikurum.cn .
+    GOPROXY=https://goproxy.io,direct \
+    CGO_ENABLED=0
 
-WORKDIR /app/dist
-USER root
-COPY ../api.ikurum.cn /app/dist/api.ikurum.cn
-RUN chmod 777 api.ikurum.cn
-RUN mkdir md
+RUN go mod tidy
+RUN go build -o api .
+
 EXPOSE 9091
-ENTRYPOINT ["/app/dist/api.ikurum.cn"]
+ENTRYPOINT ["./api"]
 
-# docker buildx build --platform linux/arm64 -t ikurum/api.ikurum.cn .
+# docker buildx build -t api --platform=linux/arm64/v8 . --push
