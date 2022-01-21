@@ -87,7 +87,7 @@ func GET(pattern string, f http.HandlerFunc) {
 }
 
 func POST(pattern string, f http.HandlerFunc) {
-	r_Mux.GET(pattern, f)
+	r_Mux.POST(pattern, f)
 }
 
 // GET 初始化路由

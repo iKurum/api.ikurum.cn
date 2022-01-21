@@ -11,9 +11,18 @@ import (
 
 func init() {
 	route.POST("/v1/article/detail", func(rw http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				msg, _ := json.Marshal(global.NewResult(&global.Result{
+					Code: 0,
+					Msg:  "recover:" + fmt.Sprint(err),
+				}))
+				rw.Write(msg)
+			}
+		}()
+
 		// 根据请求body创建一个json解析器实例
 		decoder := json.NewDecoder(r.Body)
-
 		// 用于存放参数key=value数据
 		var params map[string]string
 		// 解析参数 存入map
