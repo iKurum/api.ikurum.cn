@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	route.POST("/v1/shortid", func(rw http.ResponseWriter, r *http.Request) {
+	route.POST("/short", func(rw http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				msg, _ := json.Marshal(global.NewResult(&global.Result{
@@ -26,13 +26,14 @@ func init() {
 			}
 		}()
 
-		// 根据请求body创建一个json解析器实例
-		decoder := json.NewDecoder(r.Body)
-		// 用于存放参数key=value数据
-		var params map[string]string
-		// 解析参数 存入map
-		decoder.Decode(&params)
-		fmt.Println("params:", params)
+		r.ParseMultipartForm(32 << 20)
+		// // 根据请求body创建一个json解析器实例
+		// decoder := json.NewDecoder(r.Body)
+		// // 用于存放参数key=value数据
+		// var params map[string]string
+		// // 解析参数 存入map
+		// decoder.Decode(&params)
+		fmt.Println("params:", r.Form)
 
 		DB := global.OpenDB()
 
@@ -43,8 +44,8 @@ func init() {
 			err     error
 		)
 
-		URL := params["url"]
-		slength, e := strconv.Atoi(params["length"])
+		URL := r.Form.Get("url")
+		slength, e := strconv.Atoi(r.Form.Get("length"))
 		if e != nil || slength > 4 || slength < 1 {
 			slength = 4
 		}
@@ -62,17 +63,18 @@ func init() {
 		if errData != "" {
 			msg, _ = json.Marshal(global.NewResult(&global.Result{
 				Code: 0,
-				Data: errData,
+				Msg:  errData,
 			}))
 		} else if err != nil {
 			msg, _ = json.Marshal(global.NewResult(&global.Result{
 				Code: 0,
-				Data: err,
+				Msg:  err,
 			}))
 		} else {
 			msg, _ = json.Marshal(global.NewResult(&global.Result{
-				Code: 200,
-				Data: "https://s-url.ikurum.cn/" + s,
+				Code:  200,
+				Count: 1,
+				Data:  "https://s-url.ikurum.cn/" + s,
 			}))
 		}
 
