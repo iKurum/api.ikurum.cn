@@ -36,7 +36,7 @@ func GetApiConfig(file ...string) {
 
 	url := strings.Join(file, "")
 	if url == "" {
-		url = "ApiConfig.yaml"
+		url = "config.yaml"
 	}
 
 	yamlFile, err := ioutil.ReadFile(url)

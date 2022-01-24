@@ -12,7 +12,7 @@ func init() {
 	// 初始化log
 	logs.Init()
 	// 读取 ApiConfig.yaml 配置
-	config.GetApiConfig()
+	config.GetApiConfig("ApiConfig.yaml")
 }
 
 func main() {
