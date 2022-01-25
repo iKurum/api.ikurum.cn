@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	route.POST("/short", func(rw http.ResponseWriter, r *http.Request) {
+	route.POST("/short/", func(rw http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				msg, _ := json.Marshal(global.NewResult(&global.Result{
@@ -27,12 +27,6 @@ func init() {
 		}()
 
 		r.ParseMultipartForm(32 << 20)
-		// // 根据请求body创建一个json解析器实例
-		// decoder := json.NewDecoder(r.Body)
-		// // 用于存放参数key=value数据
-		// var params map[string]string
-		// // 解析参数 存入map
-		// decoder.Decode(&params)
 		fmt.Println("params:", r.Form)
 
 		DB := global.OpenDB()
@@ -93,7 +87,7 @@ var (
 
 func Transform(longURL string, length int, DB *sql.DB) (string, error) {
 	var sr string
-	err := DB.QueryRow("select surl from short where url=?", longURL).Scan(&sr)
+	err := DB.QueryRow("select surl from short where url=? and len=?", longURL, length).Scan(&sr)
 	global.CheckErr(err)
 	if err == nil && sr != "" {
 		return sr, nil
@@ -101,7 +95,7 @@ func Transform(longURL string, length int, DB *sql.DB) (string, error) {
 
 	r, err := getShortURL(longURL, length, DB)
 	if err == nil {
-		setDBShort(DB, longURL, r)
+		setDBShort(DB, longURL, r, length)
 	}
 	return r, nil
 }
@@ -153,18 +147,19 @@ func getShortURL(longURL string, length int, DB *sql.DB) (string, error) {
 	return sr, nil
 }
 
-func setDBShort(DB *sql.DB, longURL string, shortURL string) {
+func setDBShort(DB *sql.DB, longURL string, shortURL string, length int) {
 	var (
 		sql *sql.Stmt
 		row int64
 		err error
 	)
-	sql, err = DB.Prepare("insert into short(surl, url) values(?, ?)")
+	sql, err = DB.Prepare("insert into short(surl, url, len) values(?, ?, ?)")
 	global.CheckErr(err)
 
 	res, errDB := sql.Exec(
 		shortURL,
 		longURL,
+		length,
 	)
 	global.CheckErr(errDB, "insert short failed")
 	err = errDB

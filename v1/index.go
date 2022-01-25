@@ -11,7 +11,7 @@ import (
 	_ "api.ikurum.cn/v1/article"
 	_ "api.ikurum.cn/v1/ocr"
 	_ "api.ikurum.cn/v1/one"
-	_ "api.ikurum.cn/v1/server"
+	_ "api.ikurum.cn/v1/short"
 	_ "api.ikurum.cn/v1/user"
 	"github.com/thinkeridea/go-extend/exnet"
 )
