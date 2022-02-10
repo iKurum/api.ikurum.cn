@@ -15,4 +15,4 @@ RUN go build -o api .
 EXPOSE 9091
 ENTRYPOINT ["./api"]
 
-# docker buildx build -t api --platform=linux/arm64/v8 . --push
+# docker buildx build -t ikurum/api.ikurum.cn --platform=linux/arm64/v8 . --push
