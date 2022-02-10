@@ -305,8 +305,8 @@ func toSetDetail(DB *sql.DB, e error, f string, data map[string]interface{}) {
 	if e == sql.ErrNoRows {
 		// insert
 		logs.Warning("insert essay")
-		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, archive, uptime, addtime)values(?,?,?,?,?,?,?)")
-		global.CheckErr(err)
+		sql, err := DB.Prepare("insert into essay(essayId, title, size, content, note, archive, uptime, addtime)values(?,?,?,?,?,?,?,?)")
+		global.CheckErr(err, "DB.Prepare: ")
 		res, err := sql.Exec(
 			data["id"],
 			data["name"],

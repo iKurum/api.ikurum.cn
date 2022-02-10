@@ -74,7 +74,7 @@ func HasEssay(essayId string) error {
 
 	var time int
 	err := DB.QueryRow("select uptime from essay where essayId=?", essayId).Scan(&time)
-	return CheckErr(err)
+	return CheckErr(err, "no has essay")
 }
 
 // 获取essay详情
