@@ -301,6 +301,15 @@ func toSetDetail(DB *sql.DB, e error, f string, data map[string]interface{}) {
 
 	data["name"] = strings.Split(data["name"].(string), ".md")[0]
 
+	var (
+		content string = f
+		note    string
+	)
+	if len(a) == 2 {
+		content = a[0] + a[1]
+		note = a[0]
+	}
+
 	logs.Info("sql db has error: ", e)
 	if e == sql.ErrNoRows {
 		// insert
@@ -311,8 +320,8 @@ func toSetDetail(DB *sql.DB, e error, f string, data map[string]interface{}) {
 			data["id"],
 			data["name"],
 			data["size"],
-			f,
-			a[0],
+			content,
+			note,
 			sql_arch,
 			data["lastModifiedDateTime"],
 			data["createdDateTime"],
